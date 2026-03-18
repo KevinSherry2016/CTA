@@ -44,6 +44,20 @@ def load_close_data(symbols, trading_days, market_data_path):
     return pd.DataFrame(close_data, dtype='float64').reindex(trading_days).ffill()
 
 
+def load_main_contract(symbols, trading_days, market_data_path):
+    """加载每个品种每日的主力合约代码（mapping_ts_code 列）。"""
+    data = {}
+    for ts_code in symbols:
+        csv_path = os.path.join(market_data_path, f'{ts_code}.csv')
+        if not os.path.exists(csv_path):
+            continue
+        df = pd.read_csv(csv_path, usecols=['trade_date', 'mapping_ts_code'])
+        df['trade_date'] = df['trade_date'].astype(str)
+        df.set_index('trade_date', inplace=True)
+        data[ts_code] = df['mapping_ts_code']
+    return pd.DataFrame(data).reindex(trading_days)
+
+
 # ── 计算标准化仓位与 PnL ────────────────────────────────────────────────────────
 
 def calc_normalized(positions, close_df, info,
@@ -87,6 +101,88 @@ def calc_normalized(positions, close_df, info,
         norm_sector_daily[sector] = pnl_per_asset[cols].sum(axis=1) / scale
 
     return norm_pos_df, norm_daily_pnl, norm_sector_daily
+
+
+# ── 指标计算 ───────────────────────────────────────────────────────────────────
+
+def _rollover_adjusted_turnover(pos_df, main_contract_df):
+    """
+    计算考虑换月的每日换手量。
+
+    换月识别规则：若品种在 T 日的主力合约代码（mapping_ts_code）与 T-1 日不同，
+    则 T 日为换月日。此时：
+      - 平旧合约（T-1 EOD）+ 开新合约（T SOD）的换手合并计入 T 日：
+        turnover[T] = |pos[T-1]|（平旧） + |pos[T]|（开新）
+      - 正常日：turnover[T] = |pos[T] - pos[T-1]|
+    """
+    # 换月日：T 日主力合约 != T-1 日主力合约（两日均有合约信息）
+    prev_contract = main_contract_df.shift(1)
+    is_rollover = (
+        main_contract_df.ne(prev_contract)
+        & main_contract_df.notna()
+        & prev_contract.notna()
+    ).reindex(columns=pos_df.columns, fill_value=False)
+
+    prev_pos = pos_df.shift(1).fillna(0.0)
+
+    normal_turnover   = pos_df.diff().fillna(0.0).abs()
+    rollover_turnover = pos_df.abs() + prev_pos.abs()
+
+    turnover_df = normal_turnover.where(~is_rollover, rollover_turnover)
+    return turnover_df.sum(axis=1)
+
+
+def calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df, trading_days_per_year=250):
+    """
+    计算策略绩效指标。
+
+    参数:
+        norm_daily_pnl       : 标准化后的每日 PnL Series
+        norm_pos_df          : 标准化后的仓位 DataFrame（行=交易日，列=品种）
+        main_contract_df     : 每日主力合约代码 DataFrame（来自 mapping_ts_code）
+        trading_days_per_year: 年化交易日数（默认 250）
+    返回:
+        dict，包含各指标：
+            sharpeRatio        : 年化 Sharpe Ratio
+            maxDrawdown        : 最大回撤幅度（单位：标准差，即标准化 PnL 的累计跌幅）
+            maxDrawdownDays    : 从回撤最深点往前追溯到前高所经历的天数（最久回撤持续天数）
+            holdingPeriod      : 平均持仓天数，公式 = (sum(GMV) / sum(Turnover)) * 2
+    """
+    pnl = norm_daily_pnl.dropna()
+    std = pnl.std()
+    sharpe = pnl.mean() / std * (trading_days_per_year ** 0.5) if std != 0 else float('nan')
+
+    # 最大回撤
+    cum = pnl.cumsum()
+    rolling_max = cum.cummax()
+    drawdown = cum - rolling_max          # 始终 <= 0
+
+    max_drawdown = drawdown.min()         # 最大回撤幅度（负数，单位同 norm_daily_pnl）
+
+    # 最久回撤天数：对每个回撤低点，找其前方最近的前高点，计算天数差
+    # 遍历所有处于回撤中的位置，找最长的一段
+    max_dd_days = 0
+    peak_idx = 0
+    for i in range(len(cum)):
+        if cum.iloc[i] >= rolling_max.iloc[i]:
+            peak_idx = i          # 创新高，更新前高位置
+        else:
+            days = i - peak_idx
+            if days > max_dd_days:
+                max_dd_days = days
+
+    # 持仓周期：(sum(GMV) / sum(Turnover)) * 2，换手考虑换月
+    gmv      = norm_pos_df.abs().sum(axis=1)
+    turnover = _rollover_adjusted_turnover(norm_pos_df, main_contract_df)
+    total_turnover = turnover.sum()
+    holding_period = (gmv.sum() / total_turnover) * 2 if total_turnover != 0 else float('nan')
+
+    return {
+        'sharpeRatio':     sharpe,
+        'maxDrawdown':     max_drawdown,
+        'maxDrawdownDays': max_dd_days,
+        'holdingPeriod':   holding_period,
+    }
 
 
 # ── 绘图函数 ───────────────────────────────────────────────────────────────────
@@ -143,13 +239,21 @@ def main():
 
     positions    = load_positions(POSITION_CSV)
     trading_days = positions.index.tolist()
-    close_df     = load_close_data(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
+    close_df         = load_close_data(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
+    main_contract_df = load_main_contract(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
 
     norm_pos_df, norm_daily_pnl, norm_sector_daily = calc_normalized(
         positions, close_df, info,
         norm_start=NORM_START_DATE, norm_end=NORM_END_DATE
     )
     trade_dates = pd.to_datetime(norm_daily_pnl.index, format='%Y%m%d')
+
+    # 指标计算
+    metrics = calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df)
+    print(f'Sharpe Ratio      : {metrics["sharpeRatio"]:.4f}')
+    print(f'Max Drawdown      : {metrics["maxDrawdown"]:.4f}  (标准差单位)')
+    print(f'Max Drawdown Days : {metrics["maxDrawdownDays"]} 天')
+    print(f'Holding Period    : {metrics["holdingPeriod"]:.2f} 天')
 
     # 输出路径前缀
     if OUTPUT_PREFIX is None:
@@ -176,10 +280,15 @@ def main():
     weekday_png_path = f'{output_prefix}_weekdayPnl.png'
     plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_path)
 
+    # 5. 指标 CSV
+    metrics_csv_path = f'{output_prefix}_metrics.csv'
+    pd.DataFrame([metrics]).to_csv(metrics_csv_path, index=False, encoding='utf-8-sig')
+
     print(f'标准化仓位 CSV : {position_csv_path}')
     print(f'每日 PnL  CSV : {daily_pnl_csv_path}')
     print(f'Sector PnL 图 : {sector_png_path}')
     print(f'工作日分布图   : {weekday_png_path}')
+    print(f'指标 CSV      : {metrics_csv_path}')
 
 
 if __name__ == '__main__':
