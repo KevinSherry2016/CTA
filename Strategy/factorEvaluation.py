@@ -147,6 +147,7 @@ def calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df, trading_days_per
             maxDrawdown        : 最大回撤幅度（单位：标准差，即标准化 PnL 的累计跌幅）
             maxDrawdownDays    : 从回撤最深点往前追溯到前高所经历的天数（最久回撤持续天数）
             holdingPeriod      : 平均持仓天数，公式 = (sum(GMV) / sum(Turnover)) * 2
+            pot                : 万分之收益换手比，公式 = (sum(pnl) / sum(Turnover)) * 10000
     """
     pnl = norm_daily_pnl.dropna()
     std = pnl.std()
@@ -176,12 +177,14 @@ def calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df, trading_days_per
     turnover = _rollover_adjusted_turnover(norm_pos_df, main_contract_df)
     total_turnover = turnover.sum()
     holding_period = (gmv.sum() / total_turnover) * 2 if total_turnover != 0 else float('nan')
+    pot = (pnl.sum() / total_turnover) * 10000 if total_turnover != 0 else float('nan')
 
     return {
         'sharpeRatio':     sharpe,
         'maxDrawdown':     max_drawdown,
         'maxDrawdownDays': max_dd_days,
         'holdingPeriod':   holding_period,
+        'pot':             pot,
     }
 
 
@@ -254,6 +257,7 @@ def main():
     print(f'Max Drawdown      : {metrics["maxDrawdown"]:.4f}  (标准差单位)')
     print(f'Max Drawdown Days : {metrics["maxDrawdownDays"]} 天')
     print(f'Holding Period    : {metrics["holdingPeriod"]:.2f} 天')
+    print(f'POT               : {metrics["pot"]:.4f}  (万分之)')
 
     # 输出路径前缀
     if OUTPUT_PREFIX is None:
