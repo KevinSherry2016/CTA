@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-POSITION_CSV     = './Strategy/RSI_V1_signal.csv'
+POSITION_CSV     = './Strategy/Momentum_V1_signal.csv'
 MARKET_DATA_PATH = './total/'
 INFO_PATH        = './Info.csv'
 OUTPUT_PREFIX    = None     # None → 与 POSITION_CSV 同目录同文件名前缀
