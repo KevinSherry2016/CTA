@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-POSITION_CSV     = './Strategy/MA_V1_signal.csv'
+POSITION_CSV     = './Strategy/RSI_V1_signal.csv'
 MARKET_DATA_PATH = './total/'
 INFO_PATH        = './Info.csv'
 OUTPUT_PREFIX    = None     # None → 与 POSITION_CSV 同目录同文件名前缀
 NORM_START_DATE  = None     # 标准化计算的起始日期，格式 'YYYYMMDD'，None 表示不限
-NORM_END_DATE    = None     # 标准化计算的结束日期，格式 'YYYYMMDD'，None 表示不限
+NORM_END_DATE    = None     # 标准化计算的结束日期，格式 'YYYYMMDD', None 表示不限
 
 
 # ── 数据加载 ───────────────────────────────────────────────────────────────────
