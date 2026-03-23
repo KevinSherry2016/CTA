@@ -1,3 +1,2 @@
-趋势追踪策略：MovingAverage  RSI
-止损策略（波动率止损，固定点位止损）
-VaR如何计算
+MovingAverage_V1：
+参数M、N分别表示长周期和短周期均线，T表示持仓周期
