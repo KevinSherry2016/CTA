@@ -41,6 +41,6 @@ for ts_code, df in data.items():
 
 # ── 合并所有品种信号，对齐全部交易日后输出 CSV ────────────────────────────────
 signals = pd.DataFrame(position_series, index=tradingDayList).fillna(0).astype(float)
-output_path = './Strategy/MA_V1_signal.csv'
+output_path = './Strategy/position.csv'
 signals.to_csv(output_path, encoding='utf-8-sig')
 print(f'信号输出完成: {output_path}')

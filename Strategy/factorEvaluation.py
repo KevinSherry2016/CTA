@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-POSITION_CSV     = './Strategy/Momentum_V1_signal.csv'
+POSITION_CSV     = './Strategy/position.csv'
 MARKET_DATA_PATH = './total/'
 INFO_PATH        = './Info.csv'
 OUTPUT_PREFIX    = None     # None → 与 POSITION_CSV 同目录同文件名前缀
@@ -126,7 +126,7 @@ def _rollover_adjusted_turnover(pos_df, main_contract_df):
     prev_pos = pos_df.shift(1).fillna(0.0)
 
     normal_turnover   = pos_df.diff().fillna(0.0).abs()
-    rollover_turnover = pos_df.abs() + prev_pos.abs()
+    rollover_turnover = prev_pos.abs() + pos_df.abs()
 
     turnover_df = normal_turnover.where(~is_rollover, rollover_turnover)
     return turnover_df.sum(axis=1)
@@ -201,7 +201,7 @@ def plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, output_png):
                 linewidth=1, alpha=0.9, label=sector)
 
     ax.axhline(0, color='black', linewidth=0.6, linestyle='--')
-    ax.set_title('Cumulative PnL by Sector (Normalized)')
+    ax.set_title('Cumulative PnL by Sector')
     ax.xaxis.set_major_locator(mdates.YearLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
     ax.legend(loc='best', fontsize=8, ncol=2)
@@ -226,8 +226,31 @@ def plot_weekday_distribution(trade_dates, norm_daily_pnl, output_png):
     fig, ax = plt.subplots(figsize=(9, 4.5))
     ax.bar(weekday_labels, dist.values, color=bar_colors)
     ax.axhline(0, color='black', linewidth=0.8, linestyle='--')
-    ax.set_title('Weekday PnL Distribution (Normalized)')
+    ax.set_title('Weekday PnL Distribution')
     ax.set_ylabel('PnL')
+    plt.tight_layout()
+    fig.savefig(output_png, dpi=150)
+    plt.close(fig)
+
+
+def plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, output_png):
+    """累计 PnL 曲线图，标题展示核心绩效指标。"""
+    cumulative_pnl = norm_daily_pnl.cumsum()
+    title = (
+        f'Sharpe Ratio: {metrics["sharpeRatio"]:.2f} | '
+        f'POT: {metrics["pot"]:.2f} | '
+        f'Holding Period: {metrics["holdingPeriod"]:.0f} days'
+    )
+
+    fig, ax = plt.subplots(figsize=(14, 5))
+    ax.plot(trade_dates, cumulative_pnl, linewidth=2, color='#1f77b4')
+    ax.axhline(0, color='black', linewidth=0.6, linestyle='--')
+    ax.set_title(title)
+    ax.set_ylabel('Cumulative PnL')
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    ax.set_xlim(left=trade_dates[0])
+    fig.autofmt_xdate()
     plt.tight_layout()
     fig.savefig(output_png, dpi=150)
     plt.close(fig)
@@ -239,6 +262,8 @@ def main():
     info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
     if 'ts_code' not in info.columns or 'sector' not in info.columns:
         raise ValueError('Info.csv 必须包含 ts_code 和 sector 两列。')
+
+    output_dir = Path('Strategy')
 
     positions    = load_positions(POSITION_CSV)
     trading_days = positions.index.tolist()
@@ -253,47 +278,40 @@ def main():
 
     # 指标计算
     metrics = calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df)
-    print(f'Sharpe Ratio      : {metrics["sharpeRatio"]:.4f}')
+    print(f'Sharpe Ratio      : {metrics["sharpeRatio"]:.2f}')
     print(f'Max Drawdown      : {metrics["maxDrawdown"]:.4f}  (标准差单位)')
     print(f'Max Drawdown Days : {metrics["maxDrawdownDays"]} 天')
-    print(f'Holding Period    : {metrics["holdingPeriod"]:.2f} 天')
-    print(f'POT               : {metrics["pot"]:.4f}  (万分之)')
-
-    # 输出路径前缀
-    if OUTPUT_PREFIX is None:
-        output_prefix = str(Path(POSITION_CSV).with_suffix(''))
-    else:
-        output_prefix = OUTPUT_PREFIX
+    print(f'Holding Period    : {metrics["holdingPeriod"]:.0f} 天')
+    print(f'POT               : {metrics["pot"]:.2f}  (万分之)')
 
     # 1. 标准化仓位 CSV
-    position_csv_path = f'{output_prefix}_position_normalized.csv'
+    position_csv_path = output_dir / 'position_normalized.csv'
     norm_pos_df.to_csv(position_csv_path, encoding='utf-8-sig')
 
     # 2. 每日标准化 PnL CSV（总 PnL + 各 sector PnL + 累计 PnL）
     daily_pnl_df = norm_sector_daily.copy()
     daily_pnl_df.insert(0, 'dailyPnl', norm_daily_pnl)
     daily_pnl_df['cumulativePnl'] = norm_daily_pnl.cumsum()
-    daily_pnl_csv_path = f'{output_prefix}_dailyPnl_normalized.csv'
+    daily_pnl_csv_path = output_dir / 'dailyPnl_normalized.csv'
     daily_pnl_df.to_csv(daily_pnl_csv_path, encoding='utf-8-sig')
 
     # 3. 各 sector 累计 PnL 图
-    sector_png_path = f'{output_prefix}_sectorPnl.png'
+    sector_png_path = output_dir / 'sectorPnl.png'
     plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, sector_png_path)
 
     # 4. 工作日 PnL 分布图
-    weekday_png_path = f'{output_prefix}_weekdayPnl.png'
+    weekday_png_path = output_dir / 'weekdayPnl.png'
     plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_path)
 
-    # 5. 指标 CSV
-    metrics_csv_path = f'{output_prefix}_metrics.csv'
-    pd.DataFrame([metrics]).to_csv(metrics_csv_path, index=False, encoding='utf-8-sig')
+    # 5. 累计 PnL 图（标题展示核心指标）
+    cumulative_pnl_png_path = output_dir / 'cumulativePnl.png'
+    plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, cumulative_pnl_png_path)
 
-    print(f'标准化仓位 CSV : {position_csv_path}')
-    print(f'每日 PnL  CSV : {daily_pnl_csv_path}')
-    print(f'Sector PnL 图 : {sector_png_path}')
-    print(f'工作日分布图   : {weekday_png_path}')
-    print(f'指标 CSV      : {metrics_csv_path}')
-
+    print(f'标准化仓位 CSV : {Path(position_csv_path).name}')
+    print(f'每日 PnL  CSV : {Path(daily_pnl_csv_path).name}')
+    print(f'Sector PnL 图 : {Path(sector_png_path).name}')
+    print(f'工作日分布图   : {Path(weekday_png_path).name}')
+    print(f'累计 PnL 图   : {Path(cumulative_pnl_png_path).name}')
 
 if __name__ == '__main__':
     main()
