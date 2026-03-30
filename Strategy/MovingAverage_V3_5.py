@@ -1,19 +1,13 @@
 import math
 import os
 
+import numpy as np
 import pandas as pd
 
-from moving_average_v3_utils import (
-    OUTPUT_DIR,
-    align_series_dict,
-    build_basic_state_machine_position,
-    build_param_grid,
-    compute_daily_pnl_from_positions,
-    compute_sharpe_ratio,
-    compute_zscore,
-    get_close_df,
-    load_market_data,
-)
+
+MARKET_DATA_PATH = './total/'
+INFO_PATH = './Info.csv'
+OUTPUT_DIR = './Strategy'
 
 
 PARAM_GRID = {
@@ -31,14 +25,115 @@ TOP_PERCENTILE = 0.2
 MIN_TOP20_HITS = 2
 
 
+def load_market_data():
+    info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
+    data = {}
+    trading_days = set()
+
+    print('正在加载数据')
+    for ts_code in info['ts_code'].tolist():
+        filepath = os.path.join(MARKET_DATA_PATH, f'{ts_code}.csv')
+        if not os.path.exists(filepath):
+            print(f'文件不存在: {filepath}')
+            continue
+
+        df = pd.read_csv(filepath)
+        df['trade_date'] = df['trade_date'].astype(str)
+        df.set_index('trade_date', inplace=True)
+        df['adj_close'] = pd.to_numeric(df['adj_close'], errors='coerce')
+        df.sort_index(inplace=True)
+        data[ts_code] = df
+        trading_days.update(df.index.tolist())
+
+    return info, data, sorted(trading_days)
+
+
+def compute_zscore(df, window):
+    close = df['adj_close']
+    ma = close.rolling(window).mean()
+    return_vol = close.pct_change(fill_method=None).rolling(window).std().replace(0, np.nan)
+    return ((close / ma) - 1.0) / return_vol
+
+
+def build_position_from_zscore(zscore, z_open, z_close, max_hold, signal_mode):
+    positions = []
+    current_position = 0
+    holding_days = 0
+
+    for value in zscore.to_numpy(dtype=float):
+        if np.isnan(value):
+            current_position = 0
+            holding_days = 0
+            positions.append(0.0)
+            continue
+
+        if current_position != 0:
+            holding_days += 1
+            if abs(value) < z_close or holding_days >= max_hold:
+                current_position = 0
+                holding_days = 0
+
+        if current_position == 0:
+            if signal_mode == 'trend':
+                if value > z_open:
+                    current_position = 1
+                    holding_days = 1
+                elif value < -z_open:
+                    current_position = -1
+                    holding_days = 1
+            else:
+                if value > z_open:
+                    current_position = -1
+                    holding_days = 1
+                elif value < -z_open:
+                    current_position = 1
+                    holding_days = 1
+
+        positions.append(float(current_position))
+
+    return pd.Series(positions, index=zscore.index, dtype='float64')
+
+
+def build_param_grid(param_grid):
+    params = []
+    for window in param_grid['window']:
+        for z_open in param_grid['z_open']:
+            for z_close in param_grid['z_close']:
+                for max_hold in param_grid['max_hold']:
+                    params.append({
+                        'window': window,
+                        'z_open': z_open,
+                        'z_close': z_close,
+                        'max_hold': max_hold,
+                    })
+    return params
+
+
+def compute_daily_pnl(position_df, close_df):
+    returns = close_df.pct_change(fill_method=None).fillna(0.0)
+    return position_df.shift(1).fillna(0.0).mul(returns).sum(axis=1)
+
+
+def compute_sharpe_ratio(daily_pnl):
+    pnl = daily_pnl.dropna()
+    std = pnl.std()
+    if std == 0 or pd.isna(std):
+        return float('nan')
+    return pnl.mean() / std * np.sqrt(250)
+
+
 info, data, trading_days = load_market_data()
-close_df = get_close_df(data, trading_days)
+close_df = pd.DataFrame(
+    {ts_code: df['adj_close'] for ts_code, df in data.items()},
+    index=trading_days,
+    dtype='float64',
+).ffill()
 
 param_candidates = []
 zscore_cache = {}
 for window in PARAM_GRID['window']:
     zscore_cache[window] = {
-        ts_code: compute_zscore(df, window=window, method=ZSCORE_METHOD)
+        ts_code: compute_zscore(df, window)
         for ts_code, df in data.items()
     }
 
@@ -48,15 +143,15 @@ for params in build_param_grid(PARAM_GRID):
 
     position_series = {}
     for ts_code, zscore in zscore_cache[params['window']].items():
-        position_series[ts_code] = build_basic_state_machine_position(
-            zscore=zscore,
-            z_open=params['z_open'],
-            z_close=params['z_close'],
-            max_hold=params['max_hold'],
-            signal_mode=SIGNAL_MODE,
+        position_series[ts_code] = build_position_from_zscore(
+            zscore,
+            params['z_open'],
+            params['z_close'],
+            params['max_hold'],
+            SIGNAL_MODE,
         )
 
-    position_df = align_series_dict(position_series, trading_days)
+    position_df = pd.DataFrame(position_series, index=trading_days).fillna(0.0).astype(float)
     param_candidates.append({
         'params': params,
         'position_df': position_df,
@@ -80,7 +175,7 @@ for test_start in range(TRAIN_DAYS, len(trading_days) - TEST_DAYS + 1, STEP_DAYS
     for candidate in param_candidates:
         train_position_df = candidate['position_df'].loc[train_days]
         train_close_df = close_df.loc[train_days]
-        daily_pnl = compute_daily_pnl_from_positions(train_position_df, train_close_df)
+        daily_pnl = compute_daily_pnl(train_position_df, train_close_df)
         sharpe = compute_sharpe_ratio(daily_pnl)
         window_scores.append({'candidate': candidate, 'sharpe': sharpe})
 

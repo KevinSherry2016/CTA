@@ -1,15 +1,12 @@
 import os
 
+import numpy as np
 import pandas as pd
 
-from moving_average_v3_utils import (
-    OUTPUT_DIR,
-    align_series_dict,
-    build_basic_state_machine_position,
-    compute_zscore,
-    load_market_data,
-    rolling_return_vol,
-)
+
+MARKET_DATA_PATH = './total/'
+INFO_PATH = './Info.csv'
+OUTPUT_DIR = './Strategy'
 
 
 WINDOW = 25
@@ -23,6 +20,81 @@ VOL_FILTER_WINDOW = 60
 VOL_QUANTILE = 0.4
 LIQUIDITY_WINDOW = 60
 LIQUIDITY_QUANTILE = 0.3
+
+
+def load_market_data():
+    info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
+    data = {}
+    trading_days = set()
+
+    print('正在加载数据')
+    for ts_code in info['ts_code'].tolist():
+        filepath = os.path.join(MARKET_DATA_PATH, f'{ts_code}.csv')
+        if not os.path.exists(filepath):
+            print(f'文件不存在: {filepath}')
+            continue
+
+        df = pd.read_csv(filepath)
+        df['trade_date'] = df['trade_date'].astype(str)
+        df.set_index('trade_date', inplace=True)
+        for column in ['adj_close', 'amount', 'vol']:
+            if column in df.columns:
+                df[column] = pd.to_numeric(df[column], errors='coerce')
+        df.sort_index(inplace=True)
+        data[ts_code] = df
+        trading_days.update(df.index.tolist())
+
+    return info, data, sorted(trading_days)
+
+
+def rolling_return_vol(close, window):
+    return close.pct_change(fill_method=None).rolling(window).std().replace(0, np.nan)
+
+
+def compute_zscore(df, window):
+    close = df['adj_close']
+    ma = close.rolling(window).mean()
+    return_vol = rolling_return_vol(close, window)
+    return ((close / ma) - 1.0) / return_vol
+
+
+def build_position_from_zscore(zscore, z_open, z_close, max_hold, signal_mode):
+    positions = []
+    current_position = 0
+    holding_days = 0
+
+    for value in zscore.to_numpy(dtype=float):
+        if np.isnan(value):
+            current_position = 0
+            holding_days = 0
+            positions.append(0.0)
+            continue
+
+        if current_position != 0:
+            holding_days += 1
+            if abs(value) < z_close or holding_days >= max_hold:
+                current_position = 0
+                holding_days = 0
+
+        if current_position == 0:
+            if signal_mode == 'trend':
+                if value > z_open:
+                    current_position = 1
+                    holding_days = 1
+                elif value < -z_open:
+                    current_position = -1
+                    holding_days = 1
+            else:
+                if value > z_open:
+                    current_position = -1
+                    holding_days = 1
+                elif value < -z_open:
+                    current_position = 1
+                    holding_days = 1
+
+        positions.append(float(current_position))
+
+    return pd.Series(positions, index=zscore.index, dtype='float64')
 
 
 def apply_regime_filters(df: pd.DataFrame, raw_position: pd.Series) -> pd.Series:
@@ -52,17 +124,17 @@ info, data, trading_days = load_market_data()
 
 position_series = {}
 for ts_code, df in data.items():
-    zscore = compute_zscore(df, window=WINDOW, method=ZSCORE_METHOD)
-    raw_position = build_basic_state_machine_position(
-        zscore=zscore,
-        z_open=Z_OPEN,
-        z_close=Z_CLOSE,
-        max_hold=MAX_HOLD,
-        signal_mode=SIGNAL_MODE,
+    zscore = compute_zscore(df, WINDOW)
+    raw_position = build_position_from_zscore(
+        zscore,
+        Z_OPEN,
+        Z_CLOSE,
+        MAX_HOLD,
+        SIGNAL_MODE,
     )
     position_series[ts_code] = apply_regime_filters(df, raw_position)
 
-signals = align_series_dict(position_series, trading_days)
+signals = pd.DataFrame(position_series, index=trading_days).fillna(0.0).astype(float)
 output_path = os.path.join(OUTPUT_DIR, 'MovingAverageV3_6_filtered_signal.csv')
 signals.to_csv(output_path, encoding='utf-8-sig')
 print(f'信号输出完成: {output_path}')
