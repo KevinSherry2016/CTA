@@ -14,24 +14,23 @@ signal可以选择趋势追踪或者反转
 MovingAverage_V4：
 MovingAverage_V3的可执行版本
 
-改进方向：
-1. 分sector做参数
-2. 信号定义，即z_score
-z = (price - ma) / rolling_vol
-或 z = (price / ma - 1) / rolling_vol
-或 (price - ma) / ATR
-这三种都比“直接对价格做 z-score”更接近“离均值有多远”。
-3. 趋势追踪/追踪回复是完全两种逻辑
-4. 持仓问题，不能够rolling（window），这样会导致仓位天然增加。
-5. 不要采用全样本最优，而是walk-forward。如果一个参数在多个窗口里都排20%才有效。
-6. 
-加趋势过滤或波动过滤
-很多品种在不同 regime 下同一逻辑完全相反。可以加：
-长周期趋势过滤：只在大趋势向上时做多侧
-波动过滤：低波动不做，高波动才做
-成交活跃过滤：低活跃品种不参与
-7. 做截面标准化，例如：
-截面 rank
-截面 z-score
-波动率等权
-每个 sector 风险预算一致
+MovingAverage_V3_1：
+分 sector 配置不同参数，合成一个组合信号
+
+MovingAverage_V3_2：
+替换 z_score 定义，支持 (price - ma) / vol、(price / ma - 1) / vol、(price - ma) / ATR
+
+MovingAverage_V3_3：
+将趋势追踪和均值回复拆成两套独立逻辑与参数网格
+
+MovingAverage_V3_4：
+在状态机持仓基础上增加最短持仓与再入场冷却期，避免持仓过于抖动
+
+MovingAverage_V3_5：
+使用 walk-forward 方式做参数选择，并记录每个样本外窗口采用的参数
+
+MovingAverage_V3_6：
+在信号后增加趋势过滤、波动过滤和流动性过滤
+
+MovingAverage_V3_7：
+对横截面信号做 rank / z-score 标准化，再做波动率等权和 sector 风险均衡
