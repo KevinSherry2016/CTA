@@ -203,9 +203,19 @@ def main():
     close_df = build_close_df(data, trading_days)
     main_contract_df = build_main_contract_df(data, trading_days)
     summary_rows = []
+    total_valid_z_close_count = sum(len([z_close for z_close in Z_CLOSE_LIST if z_close < z_open]) for z_open in Z_OPEN_LIST)
+    total_param_count_per_method = len(M_LIST) * total_valid_z_close_count * len(MAX_HOLD_LIST)
+    total_param_count = total_param_count_per_method * len(ZSCORE_METHODS)
+    global_param_index = 0
+
+    print(
+        f'总遍历组合数: {total_param_count} '
+        f'(zscore_method={len(ZSCORE_METHODS)} x 每种方法组合数={total_param_count_per_method})'
+    )
 
     for zscore_method in ZSCORE_METHODS:
-        print(f'开始遍历 zscore_method: {zscore_method}')
+        method_param_index = 0
+        print(f'开始遍历 zscore_method: {zscore_method}，组合数: {total_param_count_per_method}')
         for window in M_LIST:
             zscore_series = {
                 ts_code: compute_zscore(df, window, zscore_method)
@@ -216,6 +226,14 @@ def main():
                 valid_z_close_list = [z_close for z_close in Z_CLOSE_LIST if z_close < z_open]
                 for z_close in valid_z_close_list:
                     for max_hold in MAX_HOLD_LIST:
+                        method_param_index += 1
+                        global_param_index += 1
+                        print(
+                            f'[总进度 {global_param_index}/{total_param_count}] '
+                            f'[{zscore_method} 进度 {method_param_index}/{total_param_count_per_method}] '
+                            f'window={window}, z_open={z_open}, z_close={z_close}, '
+                            f'max_hold={max_hold}, signal_mode={SIGNAL_MODE}'
+                        )
                         position_series = {}
                         for ts_code, zscore in zscore_series.items():
                             position_series[ts_code] = build_position_from_zscore(
