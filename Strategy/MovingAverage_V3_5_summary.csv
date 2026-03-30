@@ -1,0 +1,2 @@
+﻿strategyFile,window_set,z_open_set,z_close_set,max_hold_set,signal_mode,train_days,test_days,step_days,top_percentile,min_top20_hits,zscore_method,sharpeRatio,maxDrawdown,maxDrawdownDays,holdingPeriod,pot
+MovingAverageV3_5_walk_forward_signal.csv,"[10, 15, 20, 25, 30, 35, 40, 45, 50]","[1.2, 1.4, 1.6, 1.8, 2.0]","[0.0, 0.2, 0.4, 0.6, 0.8]","[10, 15, 20]",trend,750,250,250,0.2,2,price_ratio_over_vol,0.181686505177873,-40.87378833642918,1020,12.339407191448018,4.501952661432574

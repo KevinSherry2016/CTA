@@ -12,9 +12,9 @@ SUMMARY_CSV = 'MovingAverage_V3_5_summary.csv'
 
 
 PARAM_GRID = {
-    'window': [15, 20, 25, 30],
-    'z_open': [1.2, 1.4, 1.6],
-    'z_close': [0.2, 0.4, 0.6],
+    'window': [10, 15, 20, 25, 30, 35, 40, 45, 50], 
+    'z_open': [1.2, 1.4, 1.6, 1.8, 2.0],
+    'z_close': [0.0, 0.2, 0.4, 0.6, 0.8],
     'max_hold': [10, 15, 20],
 }
 ZSCORE_METHOD = 'price_ratio_over_vol'
@@ -198,6 +198,9 @@ def main():
     main_contract_df = build_main_contract_df(data, trading_days)
 
     param_candidates = []
+    raw_param_grid = build_param_grid(PARAM_GRID)
+    valid_param_candidates = [params for params in raw_param_grid if params['z_close'] < params['z_open']]
+    total_candidate_count = len(valid_param_candidates)
     zscore_cache = {}
     for window in PARAM_GRID['window']:
         zscore_cache[window] = {
@@ -205,9 +208,14 @@ def main():
             for ts_code, df in data.items()
         }
 
-    for params in build_param_grid(PARAM_GRID):
-        if params['z_close'] >= params['z_open']:
-            continue
+    print(f'开始生成参数候选，总组合数: {total_candidate_count}')
+    for candidate_index, params in enumerate(valid_param_candidates, start=1):
+        print(
+            f'[候选生成 {candidate_index}/{total_candidate_count}] '
+            f'window={params["window"]}, z_open={params["z_open"]}, '
+            f'z_close={params["z_close"]}, max_hold={params["max_hold"]}, '
+            f'signal_mode={SIGNAL_MODE}'
+        )
 
         position_series = {}
         for ts_code, zscore in zscore_cache[params['window']].items():
@@ -234,18 +242,34 @@ def main():
     oos_position_df = pd.DataFrame(0.0, index=trading_days, columns=close_df.columns)
     top20_hit_count = {candidate['key']: 0 for candidate in param_candidates}
     selection_records = []
+    test_start_list = list(range(TRAIN_DAYS, len(trading_days) - TEST_DAYS + 1, STEP_DAYS))
+    total_window_count = len(test_start_list)
 
-    for test_start in range(TRAIN_DAYS, len(trading_days) - TEST_DAYS + 1, STEP_DAYS):
+    print(f'开始 walk-forward 滚动评估，窗口数: {total_window_count}')
+    for window_index, test_start in enumerate(test_start_list, start=1):
         train_days = trading_days[test_start - TRAIN_DAYS:test_start]
         test_days = trading_days[test_start:test_start + TEST_DAYS]
+        print(
+            f'[滚动窗口 {window_index}/{total_window_count}] '
+            f'train={train_days[0]}-{train_days[-1]}, test={test_days[0]}-{test_days[-1]}'
+        )
 
         window_scores = []
-        for candidate in param_candidates:
+        for candidate_index, candidate in enumerate(param_candidates, start=1):
             train_position_df = candidate['position_df'].loc[train_days]
             train_close_df = close_df.loc[train_days]
             daily_pnl = compute_daily_pnl(train_position_df, train_close_df)
             sharpe = compute_sharpe_ratio(daily_pnl)
             window_scores.append({'candidate': candidate, 'sharpe': sharpe})
+            if candidate_index == 1 or candidate_index == len(param_candidates) or candidate_index % 100 == 0:
+                print(
+                    f'  [窗口内候选 {candidate_index}/{len(param_candidates)}] '
+                    f'window={candidate["params"]["window"]}, '
+                    f'z_open={candidate["params"]["z_open"]}, '
+                    f'z_close={candidate["params"]["z_close"]}, '
+                    f'max_hold={candidate["params"]["max_hold"]}, '
+                    f'train_sharpe={sharpe:.4f}'
+                )
 
         window_scores.sort(key=lambda item: item['sharpe'], reverse=True)
         top_count = max(1, math.ceil(len(window_scores) * TOP_PERCENTILE))
@@ -258,6 +282,15 @@ def main():
         ]
         selected_item = eligible_scores[0] if eligible_scores else window_scores[0]
         selected_candidate = selected_item['candidate']
+        print(
+            '  选中参数: '
+            f'window={selected_candidate["params"]["window"]}, '
+            f'z_open={selected_candidate["params"]["z_open"]}, '
+            f'z_close={selected_candidate["params"]["z_close"]}, '
+            f'max_hold={selected_candidate["params"]["max_hold"]}, '
+            f'train_sharpe={selected_item["sharpe"]:.4f}, '
+            f'top20_hits={top20_hit_count[selected_candidate["key"]]}'
+        )
 
         oos_position_df.loc[test_days] = selected_candidate['position_df'].loc[test_days]
         selection_records.append({
