@@ -9,9 +9,9 @@ INFO_PATH = './Info.csv'
 OUTPUT_DIR = './Strategy'
 SUMMARY_CSV = 'MovingAverage_V3_4_summary.csv'
 
-M_LIST = [15, 20, 25, 30, 35]
-Z_OPEN_LIST = [1.2, 1.4, 1.6]
-Z_CLOSE_LIST = [0.2, 0.4, 0.6]
+M_LIST = [10, 15, 20, 25, 30, 35, 40, 45, 50] 
+Z_OPEN_LIST = [1.2, 1.4, 1.6, 1.8, 2.0] 
+Z_CLOSE_LIST = [0.0, 0.2, 0.4, 0.6, 0.8]
 MIN_HOLD_LIST = [3, 5]
 MAX_HOLD_LIST = [10, 15, 20]
 COOLDOWN_LIST = [1, 3, 5]
