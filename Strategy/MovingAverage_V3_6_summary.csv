@@ -1,0 +1,2 @@
+﻿strategyFile,window,z_open,z_close,max_hold,signal_mode,zscore_method,trend_filter_window,vol_filter_window,vol_quantile,liquidity_window,liquidity_quantile,sharpeRatio,maxDrawdown,maxDrawdownDays,holdingPeriod,pot
+MovingAverageV3_6_filtered_signal.csv,25,1.4,0.4,15,trend,price_ratio_over_vol,120,60,0.4,60,0.3,-0.07921404557226473,-85.66958439531136,2233,6.870666666666668,-1.999692188937186

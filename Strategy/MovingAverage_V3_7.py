@@ -10,13 +10,13 @@ OUTPUT_DIR = './Strategy'
 SUMMARY_CSV = 'MovingAverage_V3_7_summary.csv'
 
 
-WINDOW = 25
-Z_OPEN = 1.4
-Z_CLOSE = 0.4
-MAX_HOLD = 15
-SIGNAL_MODE = 'trend'
+WINDOW_LIST = [15, 20, 25, 30, 35]
+Z_OPEN_LIST = [1.2, 1.4, 1.6]
+Z_CLOSE_LIST = [0.2, 0.4, 0.6]
+MAX_HOLD_LIST = [10, 15, 20]
+SIGNAL_MODE_LIST = ['trend', 'mean_reversion']
 ZSCORE_METHOD = 'price_ratio_over_vol'
-VOL_WINDOW = 20
+VOL_WINDOW_LIST = [10, 20, 30]
 CROSS_SECTION_METHODS = ['rank', 'zscore']
 
 
@@ -135,13 +135,13 @@ def equalize_sector_gross_exposure(signal_df, info):
     return result.replace([np.inf, -np.inf], np.nan)
 
 
-def build_signal_strength(zscore):
+def build_signal_strength(zscore, z_open, z_close, max_hold, signal_mode):
     state = build_position_from_zscore(
         zscore,
-        Z_OPEN,
-        Z_CLOSE,
-        MAX_HOLD,
-        SIGNAL_MODE,
+        z_open,
+        z_close,
+        max_hold,
+        signal_mode,
     )
     strength = state * zscore.abs()
     strength = strength.where(state != 0, 0.0)
@@ -220,42 +220,84 @@ def main():
     ).ffill()
     main_contract_df = build_main_contract_df(data, trading_days)
 
-    raw_strength_dict = {}
-    for ts_code, df in data.items():
-        zscore = compute_zscore(df, WINDOW)
-        raw_strength_dict[ts_code] = build_signal_strength(zscore)
+    total_valid_z_close_count = sum(len([z_close for z_close in Z_CLOSE_LIST if z_close < z_open]) for z_open in Z_OPEN_LIST)
+    total_param_count = (
+        len(WINDOW_LIST)
+        * total_valid_z_close_count
+        * len(MAX_HOLD_LIST)
+        * len(SIGNAL_MODE_LIST)
+        * len(VOL_WINDOW_LIST)
+        * len(CROSS_SECTION_METHODS)
+    )
+    param_index = 0
+    print(f'开始遍历 V3_7 参数，总组合数: {total_param_count}')
 
-    raw_strength_df = close_df.copy() * np.nan
-    for ts_code, signal_strength in raw_strength_dict.items():
-        raw_strength_df[ts_code] = signal_strength
-    raw_strength_df = raw_strength_df.reindex(trading_days).fillna(0.0)
+    zscore_cache = {}
+    for window in WINDOW_LIST:
+        zscore_cache[window] = {
+            ts_code: compute_zscore(df, window)
+            for ts_code, df in data.items()
+        }
 
     summary_rows = []
-    for cross_section_method in CROSS_SECTION_METHODS:
-        if cross_section_method == 'rank':
-            normalized_signal_df = row_rank_to_unit_interval(raw_strength_df)
-        else:
-            normalized_signal_df = row_zscore(raw_strength_df)
+    for window in WINDOW_LIST:
+        for z_open in Z_OPEN_LIST:
+            valid_z_close_list = [z_close for z_close in Z_CLOSE_LIST if z_close < z_open]
+            for z_close in valid_z_close_list:
+                for max_hold in MAX_HOLD_LIST:
+                    for signal_mode in SIGNAL_MODE_LIST:
+                        raw_strength_dict = {}
+                        for ts_code, zscore in zscore_cache[window].items():
+                            raw_strength_dict[ts_code] = build_signal_strength(
+                                zscore,
+                                z_open,
+                                z_close,
+                                max_hold,
+                                signal_mode,
+                            )
 
-        normalized_signal_df = normalized_signal_df.fillna(0.0)
-        scaled_signal_df = inverse_vol_scale(normalized_signal_df, close_df, VOL_WINDOW).fillna(0.0)
-        sector_balanced_signal_df = equalize_sector_gross_exposure(scaled_signal_df, info).fillna(0.0)
+                        raw_strength_df = close_df.copy() * np.nan
+                        for ts_code, signal_strength in raw_strength_dict.items():
+                            raw_strength_df[ts_code] = signal_strength
+                        raw_strength_df = raw_strength_df.reindex(trading_days).fillna(0.0)
 
-        norm_pos_df, norm_daily_pnl = calc_normalized(sector_balanced_signal_df, close_df)
-        metrics = calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df)
-        row = {
-            'strategyFile': f'MovingAverageV3_7_cross_section_{cross_section_method}.csv',
-            'cross_section_method': cross_section_method,
-            'window': WINDOW,
-            'z_open': Z_OPEN,
-            'z_close': Z_CLOSE,
-            'max_hold': MAX_HOLD,
-            'signal_mode': SIGNAL_MODE,
-            'zscore_method': ZSCORE_METHOD,
-            'vol_window': VOL_WINDOW,
-        }
-        row.update(metrics)
-        summary_rows.append(row)
+                        for vol_window in VOL_WINDOW_LIST:
+                            for cross_section_method in CROSS_SECTION_METHODS:
+                                param_index += 1
+                                print(
+                                    f'[进度 {param_index}/{total_param_count}] '
+                                    f'window={window}, z_open={z_open}, z_close={z_close}, '
+                                    f'max_hold={max_hold}, signal_mode={signal_mode}, '
+                                    f'vol_window={vol_window}, cross_section_method={cross_section_method}'
+                                )
+
+                                if cross_section_method == 'rank':
+                                    normalized_signal_df = row_rank_to_unit_interval(raw_strength_df)
+                                else:
+                                    normalized_signal_df = row_zscore(raw_strength_df)
+
+                                normalized_signal_df = normalized_signal_df.fillna(0.0)
+                                scaled_signal_df = inverse_vol_scale(normalized_signal_df, close_df, vol_window).fillna(0.0)
+                                sector_balanced_signal_df = equalize_sector_gross_exposure(scaled_signal_df, info).fillna(0.0)
+
+                                norm_pos_df, norm_daily_pnl = calc_normalized(sector_balanced_signal_df, close_df)
+                                metrics = calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df)
+                                row = {
+                                    'strategyFile': (
+                                        f'MovingAverageV3_7_M_{window}_ZO_{z_open}_ZC_{z_close}_'
+                                        f'H_{max_hold}_{signal_mode}_VW_{vol_window}_{cross_section_method}.csv'
+                                    ),
+                                    'cross_section_method': cross_section_method,
+                                    'window': window,
+                                    'z_open': z_open,
+                                    'z_close': z_close,
+                                    'max_hold': max_hold,
+                                    'signal_mode': signal_mode,
+                                    'zscore_method': ZSCORE_METHOD,
+                                    'vol_window': vol_window,
+                                }
+                                row.update(metrics)
+                                summary_rows.append(row)
 
     output_path = os.path.join(OUTPUT_DIR, SUMMARY_CSV)
     pd.DataFrame(summary_rows).to_csv(output_path, index=False, encoding='utf-8-sig')
