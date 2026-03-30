@@ -91,6 +91,10 @@ def rolling_return_vol(close, window):
     return close.pct_change(fill_method=None).rolling(window).std().replace(0, np.nan)
 
 
+def rolling_price_vol(close, window):
+    return close.rolling(window).std().replace(0, np.nan)
+
+
 def compute_atr(df, window):
     high = df['adj_high'] if 'adj_high' in df.columns else df['adj_close']
     low = df['adj_low'] if 'adj_low' in df.columns else df['adj_close']
@@ -107,16 +111,18 @@ def compute_zscore(df, window, method):
     ma = close.rolling(window).mean()
 
     if method == 'price_minus_ma_over_vol':
-        return_vol = rolling_return_vol(close, window)
-        price_vol = (ma.abs() * return_vol).replace(0, np.nan)
+        price_vol = rolling_price_vol(close, window)
         return (close - ma) / price_vol
 
     if method == 'price_ratio_over_vol':
         return_vol = rolling_return_vol(close, window)
         return ((close / ma) - 1.0) / return_vol
 
-    atr = compute_atr(df, window)
-    return (close - ma) / atr
+    if method == 'price_minus_ma_over_atr':
+        atr = compute_atr(df, window)
+        return (close - ma) / atr
+
+    raise ValueError(f'Unsupported zscore method: {method}')
 
 
 def build_close_df(data, trading_days):
