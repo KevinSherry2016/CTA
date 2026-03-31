@@ -6,7 +6,7 @@ import pandas as pd
 
 MARKET_DATA_PATH = './total/'
 INFO_PATH = './Info.csv'
-OUTPUT_DIR = './Strategy'
+OUTPUT_DIR = './Result'
 
 # 参数网格
 M_LIST = [10, 15, 20, 25, 30, 35, 40, 45, 50]          # z-score 回望窗口

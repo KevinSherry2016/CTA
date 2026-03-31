@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import matplotlib.dates as mdates
@@ -6,10 +7,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-POSITION_CSV     = './Strategy/position.csv'
+POSITION_CSV     = None     # None -> 遍历 POSITION_DIR 下全部仓位 CSV；也可指定单个文件
+POSITION_DIR     = './Result/'
 MARKET_DATA_PATH = './total/'
 INFO_PATH        = './Info.csv'
-OUTPUT_PREFIX    = None     # None → 与 POSITION_CSV 同目录同文件名前缀
+OUTPUT_DIR       = './Result/'
+OUTPUT_PREFIX    = None     # 当前批量模式下不使用；保留兼容单文件模式
 NORM_START_DATE  = None     # 标准化计算的起始日期，格式 'YYYYMMDD'，None 表示不限
 NORM_END_DATE    = None     # 标准化计算的结束日期，格式 'YYYYMMDD', None 表示不限
 
@@ -69,6 +72,7 @@ def calc_normalized(positions, close_df, info,
         norm_pos_df          : 标准化后的仓位 DataFrame（行=交易日，列=品种）
         norm_daily_pnl       : 标准化后的每日策略总 PnL Series
         norm_sector_daily    : 标准化后的各 sector 每日 PnL DataFrame（列=sector名）
+        norm_asset_daily     : 标准化后的各品种每日 PnL DataFrame（列=品种）
 
     norm_start / norm_end : 用于计算标准化因子的日期区间（字符串 'YYYYMMDD'），
                             None 表示使用全部时间段。
@@ -92,6 +96,7 @@ def calc_normalized(positions, close_df, info,
 
     norm_pos_df        = pos_df / scale
     norm_daily_pnl     = daily_pnl / scale
+    norm_asset_daily   = pnl_per_asset / scale
 
     # 各 sector 每日标准化 PnL
     asset_cols = list(pos_df.columns)
@@ -102,7 +107,7 @@ def calc_normalized(positions, close_df, info,
             continue
         norm_sector_daily[sector] = pnl_per_asset[cols].sum(axis=1) / scale
 
-    return norm_pos_df, norm_daily_pnl, norm_sector_daily
+    return norm_pos_df, norm_daily_pnl, norm_sector_daily, norm_asset_daily
 
 
 # ── 指标计算 ───────────────────────────────────────────────────────────────────
@@ -258,7 +263,65 @@ def plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, output_png):
     plt.close(fig)
 
 
-def collect_position_csv_files(strategy_dir):
+def _sanitize_filename(value):
+    return re.sub(r'[^A-Za-z0-9._-]+', '_', str(value)).strip('_') or 'unknown'
+
+
+def plot_sector_asset_cumulative_pnl(
+    trade_dates,
+    sector,
+    sector_daily_pnl,
+    asset_daily_pnl,
+    output_png,
+):
+    """单个 sector 的累计 PnL 图，包含 sector 总体与其下各品种。"""
+    sector_cum = sector_daily_pnl.cumsum()
+    asset_cum = asset_daily_pnl.cumsum()
+
+    fig, ax = plt.subplots(figsize=(14, 5))
+    ax.plot(trade_dates, sector_cum, linewidth=2.4, color='#111111', label=f'{sector} Total')
+    for symbol in asset_cum.columns:
+        ax.plot(trade_dates, asset_cum[symbol], linewidth=1, alpha=0.85, label=symbol)
+
+    ax.axhline(0, color='black', linewidth=0.6, linestyle='--')
+    ax.set_title(f'Cumulative PnL - {sector}')
+    ax.set_ylabel('Cumulative PnL')
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    ax.set_xlim(left=trade_dates[0])
+    ax.legend(loc='best', fontsize=8, ncol=2)
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    fig.savefig(output_png, dpi=150)
+    plt.close(fig)
+
+
+def output_sector_asset_plots(trade_dates, norm_sector_daily, norm_asset_daily, info, output_dir, output_prefix):
+    """为每个 sector 输出包含 sector 与各品种累计 PnL 的图。"""
+    output_files = []
+    for sector, group in info.groupby('sector'):
+        if sector not in norm_sector_daily.columns:
+            continue
+        symbols = [symbol for symbol in group['ts_code'].tolist() if symbol in norm_asset_daily.columns]
+        if not symbols:
+            continue
+
+        sector_output = output_dir / (
+            f'{output_prefix}_sector_{_sanitize_filename(sector)}_assetCumulativePnl.png'
+        )
+        plot_sector_asset_cumulative_pnl(
+            trade_dates=trade_dates,
+            sector=sector,
+            sector_daily_pnl=norm_sector_daily[sector],
+            asset_daily_pnl=norm_asset_daily[symbols],
+            output_png=sector_output,
+        )
+        output_files.append(sector_output)
+
+    return output_files
+
+
+def collect_position_csv_files(position_dir):
     """收集待评估的仓位 CSV，排除本脚本输出的结果文件。"""
     excluded_suffixes = (
         '_position_normalized.csv',
@@ -270,7 +333,7 @@ def collect_position_csv_files(strategy_dir):
     }
 
     csv_files = []
-    for path in sorted(strategy_dir.glob('*.csv')):
+    for path in sorted(position_dir.glob('*.csv')):
         if path.name.endswith(excluded_suffixes):
             continue
         if path.stem in excluded_stems:
@@ -285,7 +348,7 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     close_df = load_close_data(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
     main_contract_df = load_main_contract(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
 
-    norm_pos_df, norm_daily_pnl, norm_sector_daily = calc_normalized(
+    norm_pos_df, norm_daily_pnl, norm_sector_daily, norm_asset_daily = calc_normalized(
         positions, close_df, info,
         norm_start=NORM_START_DATE, norm_end=NORM_END_DATE
     )
@@ -309,6 +372,16 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     sector_png_out = output_dir / f'{output_prefix}_sectorPnl.png'
     plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, sector_png_out)
 
+    # 3.1 每个 sector 单独输出：sector 累计 PnL + 各品种累计 PnL
+    sector_asset_png_files = output_sector_asset_plots(
+        trade_dates=trade_dates,
+        norm_sector_daily=norm_sector_daily,
+        norm_asset_daily=norm_asset_daily,
+        info=info,
+        output_dir=output_dir,
+        output_prefix=output_prefix,
+    )
+
     # 4. 工作日 PnL 分布图
     weekday_png_out = output_dir / f'{output_prefix}_weekdayPnl.png'
     plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_out)
@@ -330,6 +403,7 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     print(f'  标准化仓位 CSV : {position_csv_out.name}')
     print(f'  每日 PnL  CSV : {daily_pnl_csv_out.name}')
     print(f'  Sector PnL 图 : {sector_png_out.name}')
+    print(f'  Sector分品种图 : {len(sector_asset_png_files)} 张')
     print(f'  工作日分布图   : {weekday_png_out.name}')
     print(f'  累计 PnL 图   : {cumulative_pnl_png_out.name}')
     print(f'  指标 CSV      : {metrics_csv_out.name}')
@@ -346,11 +420,17 @@ def main():
     if 'ts_code' not in info.columns or 'sector' not in info.columns:
         raise ValueError('Info.csv 必须包含 ts_code 和 sector 两列。')
 
-    output_dir = Path('Strategy')
+    position_dir = Path(POSITION_DIR)
+    output_dir = Path(OUTPUT_DIR)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    position_files = collect_position_csv_files(output_dir)
+    if POSITION_CSV is not None:
+        position_files = [Path(POSITION_CSV)]
+    else:
+        position_files = collect_position_csv_files(position_dir)
+
     if not position_files:
-        raise ValueError('未在 ./Strategy 下找到可评估的仓位 CSV 文件。')
+        raise ValueError(f'未在 {position_dir} 下找到可评估的仓位 CSV 文件。')
 
     print(f'待评估文件数量: {len(position_files)}')
     all_metrics = []
