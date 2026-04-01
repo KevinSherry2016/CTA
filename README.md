@@ -12,7 +12,13 @@ signal可以选择趋势追踪或者反转
 计算z_score，在满足开仓条件后开仓，在满足平仓条件或者达到最长持仓天数时平仓
 
 MovingAverage_V4：
-MovingAverage_V3的可执行版本
+参数FAST_M_LIST分别表示短周期均线，SLOW_M_LIST表示长周期均线，z_open表示开仓阈值，z_close表示平仓阈值
+signal可以选择趋势追踪或者反转
+计算z_score，在满足开仓条件后开仓，在满足平仓条件时平仓
+
+MovingAverage_V4_1：
+优化了参数
+增加了信号定义
 
 MovingAverage_V3_1：
 分 sector 配置不同参数，合成一个组合信号
