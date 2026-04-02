@@ -45,3 +45,8 @@ MovingAverage_V3_6：
 
 MovingAverage_V3_7：
 对横截面信号做 rank / z-score 标准化，再做波动率等权和 sector 风险均衡
+
+
+Momentum_V1
+计算最近N天的return随后标准化（z-score），然后在因子层面进行cross-section比较。仅交易TOPN
+最后生成的仓位再除以vol

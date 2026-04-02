@@ -351,9 +351,9 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     sector_png_out = output_dir / f'{output_prefix}_sectorPnl.png'
     plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, sector_png_out)
 
-    # 4. 工作日 PnL 分布图
-    weekday_png_out = output_dir / f'{output_prefix}_weekdayPnl.png'
-    plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_out)
+    # # 4. 工作日 PnL 分布图
+    # weekday_png_out = output_dir / f'{output_prefix}_weekdayPnl.png'
+    # plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_out)
 
     # 5. 各 sector 内各品种累计 PnL 图
     plot_symbol_pnl_by_sector(trade_dates, norm_pnl_per_asset, info, output_dir, output_prefix)
@@ -375,7 +375,7 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     print(f'  标准化仓位 CSV : {position_csv_out.name}')
     print(f'  每日 PnL  CSV : {daily_pnl_csv_out.name}')
     print(f'  Sector PnL 图 : {sector_png_out.name}')
-    print(f'  工作日分布图   : {weekday_png_out.name}')
+    # print(f'  工作日分布图   : {weekday_png_out.name}')
     print(f'  累计 PnL 图   : {cumulative_pnl_png_out.name}')
     print(f'  指标 CSV      : {metrics_csv_out.name}')
 
