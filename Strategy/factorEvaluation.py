@@ -69,6 +69,7 @@ def calc_normalized(positions, close_df, info,
     """
     返回:
         norm_pos_df          : 标准化后的仓位 DataFrame（行=交易日，列=品种）
+        norm_pnl_per_asset   : 标准化后的各品种每日 PnL DataFrame（行=交易日，列=品种）
         norm_daily_pnl       : 标准化后的每日策略总 PnL Series
         norm_sector_daily    : 标准化后的各 sector 每日 PnL DataFrame（列=sector名）
 
@@ -93,6 +94,7 @@ def calc_normalized(positions, close_df, info,
         scale = 1.0
 
     norm_pos_df        = pos_df / scale
+    norm_pnl_per_asset = pnl_per_asset / scale
     norm_daily_pnl     = daily_pnl / scale
 
     # 各 sector 每日标准化 PnL
@@ -104,7 +106,7 @@ def calc_normalized(positions, close_df, info,
             continue
         norm_sector_daily[sector] = pnl_per_asset[cols].sum(axis=1) / scale
 
-    return norm_pos_df, norm_daily_pnl, norm_sector_daily
+    return norm_pos_df, norm_pnl_per_asset, norm_daily_pnl, norm_sector_daily
 
 
 # ── 指标计算 ───────────────────────────────────────────────────────────────────
@@ -260,6 +262,44 @@ def plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, output_png):
     plt.close(fig)
 
 
+def _safe_filename(text):
+    """将字符串转换为适合文件名的格式。"""
+    return ''.join(ch if ch.isalnum() or ch in ('-', '_') else '_' for ch in str(text))
+
+
+def plot_symbol_pnl_by_sector(trade_dates, norm_pnl_per_asset, info, output_dir, output_prefix):
+    """在每个 sector 内，绘制各品种累计 PnL 曲线。"""
+    for sector, group in info.groupby('sector'):
+        cols = [c for c in group['ts_code'].tolist() if c in norm_pnl_per_asset.columns]
+        if not cols:
+            continue
+
+        fig, ax = plt.subplots(figsize=(14, 5))
+        for ts_code in cols:
+            ax.plot(
+                trade_dates,
+                norm_pnl_per_asset[ts_code].cumsum(),
+                linewidth=1,
+                alpha=0.9,
+                label=ts_code,
+            )
+
+        ax.axhline(0, color='black', linewidth=0.6, linestyle='--')
+        ax.set_title(f'Sector={sector} | Symbol Cumulative PnL')
+        ax.set_ylabel('Cumulative PnL')
+        ax.xaxis.set_major_locator(mdates.YearLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+        ax.set_xlim(left=trade_dates[0])
+        ax.legend(loc='best', fontsize=7, ncol=3)
+        fig.autofmt_xdate()
+        plt.tight_layout()
+
+        safe_sector = _safe_filename(sector)
+        output_png = output_dir / f'{output_prefix}_sector_{safe_sector}_symbolPnl.png'
+        fig.savefig(output_png, dpi=150)
+        plt.close(fig)
+
+
 def collect_position_csv_files(position_dir):
     """收集待评估的仓位 CSV，排除本脚本输出的结果文件。"""
     excluded_suffixes = (
@@ -287,7 +327,7 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     close_df = load_close_data(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
     main_contract_df = load_main_contract(positions.columns.tolist(), trading_days, MARKET_DATA_PATH)
 
-    norm_pos_df, norm_daily_pnl, norm_sector_daily = calc_normalized(
+    norm_pos_df, norm_pnl_per_asset, norm_daily_pnl, norm_sector_daily = calc_normalized(
         positions, close_df, info,
         norm_start=NORM_START_DATE, norm_end=NORM_END_DATE
     )
@@ -298,30 +338,33 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
 
     # 1. 标准化仓位 CSV
     position_csv_out = output_dir / f'{output_prefix}_position_normalized.csv'
-    # norm_pos_df.to_csv(position_csv_out, encoding='utf-8-sig')
+    norm_pos_df.to_csv(position_csv_out, encoding='utf-8-sig')
 
     # 2. 每日标准化 PnL CSV（总 PnL + 各 sector PnL + 累计 PnL）
     daily_pnl_df = norm_sector_daily.copy()
     daily_pnl_df.insert(0, 'dailyPnl', norm_daily_pnl)
     daily_pnl_df['cumulativePnl'] = norm_daily_pnl.cumsum()
     daily_pnl_csv_out = output_dir / f'{output_prefix}_dailyPnl_normalized.csv'
-    # daily_pnl_df.to_csv(daily_pnl_csv_out, encoding='utf-8-sig')
+    daily_pnl_df.to_csv(daily_pnl_csv_out, encoding='utf-8-sig')
 
-    # # 3. 各 sector 累计 PnL 图
-    # sector_png_out = output_dir / f'{output_prefix}_sectorPnl.png'
-    # plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, sector_png_out)
+    # 3. 各 sector 累计 PnL 图
+    sector_png_out = output_dir / f'{output_prefix}_sectorPnl.png'
+    plot_sector_pnl(trade_dates, norm_daily_pnl, norm_sector_daily, sector_png_out)
 
-    # # 4. 工作日 PnL 分布图
-    # weekday_png_out = output_dir / f'{output_prefix}_weekdayPnl.png'
-    # plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_out)
+    # 4. 工作日 PnL 分布图
+    weekday_png_out = output_dir / f'{output_prefix}_weekdayPnl.png'
+    plot_weekday_distribution(trade_dates, norm_daily_pnl, weekday_png_out)
 
-    # 5. 累计 PnL 图（标题展示核心指标）
+    # 5. 各 sector 内各品种累计 PnL 图
+    plot_symbol_pnl_by_sector(trade_dates, norm_pnl_per_asset, info, output_dir, output_prefix)
+
+    # 6. 累计 PnL 图（标题展示核心指标）
     cumulative_pnl_png_out = output_dir / f'{output_prefix}_cumulativePnl.png'
     plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, cumulative_pnl_png_out)
 
-    # 6. 单策略 metrics
+    # 7. 单策略 metrics
     metrics_csv_out = output_dir / f'{output_prefix}_metrics.csv'
-    # pd.DataFrame([metrics]).to_csv(metrics_csv_out, index=False, encoding='utf-8-sig')
+    pd.DataFrame([metrics]).to_csv(metrics_csv_out, index=False, encoding='utf-8-sig')
 
     print(f'\n评估完成: {position_csv_path.name}')
     print(f'  Sharpe Ratio      : {metrics["sharpeRatio"]:.2f}')
@@ -331,8 +374,8 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     print(f'  POT               : {metrics["pot"]:.2f}  (万分之)')
     print(f'  标准化仓位 CSV : {position_csv_out.name}')
     print(f'  每日 PnL  CSV : {daily_pnl_csv_out.name}')
-    # print(f'  Sector PnL 图 : {sector_png_out.name}')
-    # print(f'  工作日分布图   : {weekday_png_out.name}')
+    print(f'  Sector PnL 图 : {sector_png_out.name}')
+    print(f'  工作日分布图   : {weekday_png_out.name}')
     print(f'  累计 PnL 图   : {cumulative_pnl_png_out.name}')
     print(f'  指标 CSV      : {metrics_csv_out.name}')
 

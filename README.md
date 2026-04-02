@@ -18,7 +18,12 @@ signal可以选择趋势追踪或者反转
 
 MovingAverage_V4_1：
 优化了参数
-增加了信号定义
+增加了信号定义（共计4种）
+支持分sector/全品种回测
+参数T表示将每日仓位平滑T日
+
+MovingAverage_V4_2：
+最优sector，合并后得到最终版本
 
 MovingAverage_V3_1：
 分 sector 配置不同参数，合成一个组合信号

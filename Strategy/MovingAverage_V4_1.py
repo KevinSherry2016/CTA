@@ -33,7 +33,11 @@ Z_CLOSE_LIST = [0.1, 0.2, 0.3, 0.4, 0.5]
 # 交易模式：
 # trend          -> 信号为正做多，信号为负做空
 # mean_reversion -> 信号为正做空，信号为负做多
-SIGNAL_MODE_LIST = ['trend', 'mean_reversion']
+SIGNAL_MODE_LIST = ['trend']
+
+# 仓位平滑窗口（T 日）：
+# T=1 表示不平滑；T>1 表示对最终仓位做滚动均值平滑。
+POSITION_SMOOTH_T_LIST = [1, 5, 10]
 
 # SIGNAL_DEF_LIST 表示“信号定义”的集合。
 # 这一步是本版本的核心升级：不再把趋势强度写死为单一公式，而是允许同一套
@@ -83,8 +87,9 @@ def get_param_grid(profile: str) -> dict:
             'slow_windows': [30, 40, 50],
             'z_open_list': [0.6, 0.8, 1.0],
             'z_close_list': [0.2, 0.4],
-            'atr_windows': [10, 15, 20],
-            'slope_lookbacks': [3, 5, 10],
+            'atr_windows': [15],
+            'slope_lookbacks': [5],
+            'smooth_t_list': [1, 5, 10],
             'signal_modes': SIGNAL_MODE_LIST,
         }
 
@@ -97,6 +102,7 @@ def get_param_grid(profile: str) -> dict:
             'z_close_list': Z_CLOSE_LIST,
             'atr_windows': ATR_WINDOW_LIST,
             'slope_lookbacks': SLOPE_LOOKBACK_LIST,
+            'smooth_t_list': POSITION_SMOOTH_T_LIST,
             'signal_modes': SIGNAL_MODE_LIST,
         }
 
@@ -122,8 +128,21 @@ def estimate_combo_count(grid: dict) -> int:
     for signal_def in grid['signal_defs']:
         atr_windows = grid['atr_windows'] if 'over_atr' in signal_def else [15]
         slope_lookbacks = grid['slope_lookbacks'] if 'slope' in signal_def else [5]
-        total += valid_fs * len(atr_windows) * len(slope_lookbacks) * valid_z
+        total += (
+            valid_fs
+            * len(atr_windows)
+            * len(slope_lookbacks)
+            * valid_z
+            * len(grid['smooth_t_list'])
+        )
     return total * len(grid['signal_modes'])
+
+
+def smooth_position_series(position: pd.Series, smooth_t: int) -> pd.Series:
+    """对最终仓位做 T 日滚动平滑。"""
+    if smooth_t <= 1:
+        return position.astype('float64')
+    return position.rolling(window=smooth_t, min_periods=1).mean().astype('float64')
 
 
 def build_position_from_strength(
@@ -269,6 +288,17 @@ def build_strength_series(
 info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
 ts_code_list = info['ts_code'].tolist()
 
+# Info.csv 原始 sector 分组；后续会结合已加载数据再生成最终 sector_map。
+base_sector_map: dict[str, list[str]] = (
+    info.groupby('sector')['ts_code']
+    .apply(list)
+    .to_dict()
+)
+
+# 如果只想跑某几个分组，在这里指定；设为 None 则跑全部。
+# 注意：支持新增分组 'All'（全部品种）。
+SECTOR_FILTER: list[str] | None = None
+
 temp = pd.read_csv(os.path.join(MARKET_DATA_PATH, 'CU.SHF.csv'))
 trading_day_list = temp['trade_date'].astype(str).tolist()
 
@@ -288,75 +318,103 @@ for ts_code in ts_code_list:
     else:
         print(f'文件不存在: {filepath}')
 
+# 基于“实际已加载数据”构建最终分组，避免空文件导致的无效品种。
+loaded_ts_codes = list(data.keys())
+sector_map: dict[str, list[str]] = {
+    sector: [ts_code for ts_code in sector_ts_codes if ts_code in data]
+    for sector, sector_ts_codes in base_sector_map.items()
+}
+sector_map = {k: v for k, v in sector_map.items() if v}
+
+# 新增 All 分组：包含全部已加载品种。
+sector_map['All'] = loaded_ts_codes
+
+if SECTOR_FILTER is not None:
+    sector_map = {k: v for k, v in sector_map.items() if k in SECTOR_FILTER}
+
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 param_grid = get_param_grid(RUN_PROFILE)
 estimated_count = estimate_combo_count(param_grid)
 print(f'运行档位: {RUN_PROFILE}')
-print(f'预计输出文件数: {estimated_count}')
+print(f'涉及 sector 数: {len(sector_map)}  {list(sector_map.keys())}')
+print(f'预计输出文件数 (单 sector): {estimated_count}  合计: {estimated_count * len(sector_map)}')
 
-print('开始生成参数组合信号 (V4_1 多信号定义)')
-for signal_def in param_grid['signal_defs']:
-    print(f'当前信号定义: {signal_def}')
+print('开始生成参数组合信号 (V4_1 分 sector 多信号定义)')
+for sector, sector_ts_codes in sector_map.items():
+    # 过滤出该 sector 中实际有数据的品种
+    sector_data = {ts_code: data[ts_code] for ts_code in sector_ts_codes if ts_code in data}
+    if not sector_data:
+        print(f'[{sector}] 无数据，跳过')
+        continue
+    print(f'\n===== Sector: {sector} ({len(sector_data)} 个品种) =====')
 
-    for slow_window in param_grid['slow_windows']:
-        for fast_window in param_grid['fast_windows']:
-            if fast_window >= slow_window:
-                continue
+    for signal_def in param_grid['signal_defs']:
+        print(f'[{sector}] 当前信号定义: {signal_def}')
 
-            current_atr_windows = param_grid['atr_windows'] if 'over_atr' in signal_def else [15]
-            current_slope_lookbacks = param_grid['slope_lookbacks'] if 'slope' in signal_def else [5]
+        for slow_window in param_grid['slow_windows']:
+            for fast_window in param_grid['fast_windows']:
+                if fast_window >= slow_window:
+                    continue
 
-            for atr_window in current_atr_windows:
-                for slope_lookback in current_slope_lookbacks:
-                    strength_series = {}
-                    for ts_code, df in data.items():
-                        strength_series[ts_code] = build_strength_series(
-                            df=df,
-                            fast_window=fast_window,
-                            slow_window=slow_window,
-                            signal_def=signal_def,
-                            atr_window=atr_window,
-                            slope_lookback=slope_lookback,
-                        )
+                current_atr_windows = param_grid['atr_windows'] if 'over_atr' in signal_def else [15]
+                current_slope_lookbacks = param_grid['slope_lookbacks'] if 'slope' in signal_def else [5]
 
-                    for z_open in param_grid['z_open_list']:
-                        valid_z_close_list = [
-                            z_close for z_close in param_grid['z_close_list'] if z_close < z_open
-                        ]
+                for atr_window in current_atr_windows:
+                    for slope_lookback in current_slope_lookbacks:
+                        strength_series = {}
+                        for ts_code, df in sector_data.items():
+                            strength_series[ts_code] = build_strength_series(
+                                df=df,
+                                fast_window=fast_window,
+                                slow_window=slow_window,
+                                signal_def=signal_def,
+                                atr_window=atr_window,
+                                slope_lookback=slope_lookback,
+                            )
 
-                        for z_close in valid_z_close_list:
-                            for signal_mode in param_grid['signal_modes']:
-                                print(
-                                    '正在计算信号: '
-                                    f'signal_def={signal_def}, '
-                                    f'F={fast_window}, S={slow_window}, '
-                                    f'ATR={atr_window}, SLP={slope_lookback}, '
-                                    f'z_open={z_open}, z_close={z_close}, '
-                                    f'mode={signal_mode}'
-                                )
+                        for z_open in param_grid['z_open_list']:
+                            valid_z_close_list = [
+                                z_close for z_close in param_grid['z_close_list'] if z_close < z_open
+                            ]
 
-                                position_series = {}
-                                for ts_code, strength in strength_series.items():
-                                    position_series[ts_code] = build_position_from_strength(
-                                        strength=strength,
-                                        z_open=z_open,
-                                        z_close=z_close,
-                                        signal_mode=signal_mode,
-                                    )
+                            for z_close in valid_z_close_list:
+                                for smooth_t in param_grid['smooth_t_list']:
+                                    for signal_mode in param_grid['signal_modes']:
+                                        print(
+                                            f'[{sector}] 正在计算信号: '
+                                            f'signal_def={signal_def}, '
+                                            f'F={fast_window}, S={slow_window}, '
+                                            f'ATR={atr_window}, SLP={slope_lookback}, '
+                                            f'z_open={z_open}, z_close={z_close}, '
+                                            f'T={smooth_t}, mode={signal_mode}'
+                                        )
 
-                                signals = (
-                                    pd.DataFrame(position_series, index=trading_day_list)
-                                    .fillna(0.0)
-                                    .astype(float)
-                                )
+                                        position_series = {}
+                                        for ts_code, strength in strength_series.items():
+                                            raw_position = build_position_from_strength(
+                                                strength=strength,
+                                                z_open=z_open,
+                                                z_close=z_close,
+                                                signal_mode=signal_mode,
+                                            )
+                                            position_series[ts_code] = smooth_position_series(
+                                                raw_position,
+                                                smooth_t=smooth_t,
+                                            )
 
-                                output_name = (
-                                    f'MovingAverageV4_1_{signal_def}_'
-                                    f'F_{fast_window}_S_{slow_window}_'
-                                    f'ATR_{atr_window}_SLP_{slope_lookback}_'
-                                    f'ZO_{z_open}_ZC_{z_close}_{signal_mode}.csv'
-                                )
-                                output_path = os.path.join(OUTPUT_DIR, output_name)
-                                signals.to_csv(output_path, encoding='utf-8-sig')
-                                print(f'信号输出完成: {output_path}')
+                                        signals = (
+                                            pd.DataFrame(position_series, index=trading_day_list)
+                                            .fillna(0.0)
+                                            .astype(float)
+                                        )
+
+                                        output_name = (
+                                            f'MovingAverageV4_1_{sector}_{signal_def}_'
+                                            f'F_{fast_window}_S_{slow_window}_'
+                                            f'ATR_{atr_window}_SLP_{slope_lookback}_'
+                                            f'ZO_{z_open}_ZC_{z_close}_T_{smooth_t}_{signal_mode}.csv'
+                                        )
+                                        output_path = os.path.join(OUTPUT_DIR, output_name)
+                                        signals.to_csv(output_path, encoding='utf-8-sig')
+                                        print(f'信号输出完成: {output_path}')

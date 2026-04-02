@@ -25,6 +25,7 @@ ts_code_list = [
                 # 'RU.SHF',
                 # 'SP.SHF',
                 # 'OP.SHF',
+                #无法获取数据
                 # 'EC.SHF',
                 # 'A.DCE',
                 # 'B.DCE',
