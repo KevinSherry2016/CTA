@@ -29,7 +29,7 @@ FILE_WEIGHTS = {
 MERGE_MODE = 'sum'
 
 # 平滑窗口（天数）。0 或 1 表示不平滑。
-SMOOTH_WINDOW = 5
+SMOOTH_WINDOW = 1
 
 OUTPUT_PATH = RESULT_DIR / 'merged_sector_position.csv'
 
