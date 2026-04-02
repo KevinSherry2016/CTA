@@ -33,7 +33,7 @@ CROSS_SECTION_RANK = True  # 是否用横截面排名构造头寸
 TOP_PERCENT = 0.2          # 横截面做多/做空百分比（top/bottom）
 TARGET_LEVERAGE = 1.0      # 归一化后每日绝对仓位和
 
-OUTPUT_FILENAME = f"{STRATEGY_NAME}_momentum_{MOM_LOOKBACK}_T_{SMOOTH_T}_position_normalized.csv"
+OUTPUT_FILENAME = f"{STRATEGY_NAME}_momentum_{MOM_LOOKBACK}_T_{SMOOTH_T}_position.csv"
 
 
 # ----------------------------- 数据加载 -------------------------------------
@@ -184,12 +184,12 @@ def run(universe: tp.Optional[list[str]] = None,
 
     raw_positions = make_positions_from_factor(factor_df, cross_section_rank=cross_rank, top_percent=top_pct)
     smoothed = smooth_positions(raw_positions, window=smooth_t)
-    normed = normalize_positions(smoothed, target_leverage=target_lev)
 
+    # 不进行每日归一化，直接输出平滑后的仓位矩阵
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     outpath = RESULT_DIR / OUTPUT_FILENAME
-    normed.to_csv(outpath, encoding='utf-8-sig')
-    print(f'输出标准化仓位: {outpath}  （shape={normed.shape}）')
+    smoothed.to_csv(outpath, encoding='utf-8-sig')
+    print(f'输出仓位（未归一化）: {outpath}  （shape={smoothed.shape}）')
     return outpath
 
 
