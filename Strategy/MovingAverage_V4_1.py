@@ -38,6 +38,7 @@ SIGNAL_MODE_LIST = ['trend']
 # 仓位平滑窗口（T 日）：
 # T=1 表示不平滑；T>1 表示对最终仓位做滚动均值平滑。
 POSITION_SMOOTH_T_LIST = [1, 5, 10]
+FINAL_VOL_WINDOW = 20
 
 # SIGNAL_DEF_LIST 表示“信号定义”的集合。
 # 这一步是本版本的核心升级：不再把趋势强度写死为单一公式，而是允许同一套
@@ -143,6 +144,15 @@ def smooth_position_series(position: pd.Series, smooth_t: int) -> pd.Series:
     if smooth_t <= 1:
         return position.astype('float64')
     return position.rolling(window=smooth_t, min_periods=1).mean().astype('float64')
+
+
+def calc_rolling_return_vol(df: pd.DataFrame, window: int) -> pd.Series:
+    """计算近 N 天收益波动率，用于最终仓位缩放。"""
+    if window <= 1:
+        return pd.Series(1.0, index=df.index, dtype='float64')
+
+    returns = pd.to_numeric(df['adj_close'], errors='coerce').pct_change(fill_method=None)
+    return returns.rolling(window=window, min_periods=1).std().replace(0, np.nan)
 
 
 def build_position_from_strength(
@@ -409,11 +419,25 @@ for sector, sector_ts_codes in sector_map.items():
                                             .astype(float)
                                         )
 
+                                        vol_series = {}
+                                        for ts_code, df in sector_data.items():
+                                            vol_series[ts_code] = calc_rolling_return_vol(
+                                                df,
+                                                window=FINAL_VOL_WINDOW,
+                                            ).reindex(trading_day_list)
+
+                                        vol_df = (
+                                            pd.DataFrame(vol_series, index=trading_day_list)
+                                            .replace(0, np.nan)
+                                        )
+                                        signals = signals.div(vol_df).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
                                         output_name = (
                                             f'MovingAverageV4_1_{sector}_{signal_def}_'
                                             f'F_{fast_window}_S_{slow_window}_'
                                             f'ATR_{atr_window}_SLP_{slope_lookback}_'
-                                            f'ZO_{z_open}_ZC_{z_close}_T_{smooth_t}_{signal_mode}.csv'
+                                            f'ZO_{z_open}_ZC_{z_close}_T_{smooth_t}_'
+                                            f'VOL_{FINAL_VOL_WINDOW}_{signal_mode}.csv'
                                         )
                                         output_path = os.path.join(OUTPUT_DIR, output_name)
                                         signals.to_csv(output_path, encoding='utf-8-sig')
