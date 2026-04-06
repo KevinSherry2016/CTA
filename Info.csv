@@ -12,9 +12,10 @@ AG.SHF,白银,Precious,15
 RB.SHF,螺纹钢,Ferrous,10
 HC.SHF,热轧卷板,Ferrous,10
 SS.SHF,不锈钢,Ferrous,5
-SC.SHF,原油,Energy,1000
 FU.SHF,燃料油,Energy,10
-LU.SHF,低硫燃料油,Energy,10
+SC.INE,原油,Energy,1000
+EC.INE,欧线航运指数,Other,50
+LU.INE,低硫燃料油,Energy,10
 BU.SHF,沥青,Energy,10
 RU.SHF,天然橡胶,Energy,10
 SP.SHF,纸浆,Energy,10
@@ -45,7 +46,7 @@ OI.ZCE,菜籽油,Agriculture,10
 RM.ZCE,菜粕,Agriculture,10
 CY.ZCE,棉纱,Agriculture,5
 AP.ZCE,苹果,Agriculture,10
-PTA.ZCE,PTA,Energy,5
+TA.ZCE,PTA,Energy,5
 MA.ZCE,甲醇,Energy,10
 FG.ZCE,玻璃,Energy,20
 SF.ZCE,硅铁,Ferrous,5
@@ -62,3 +63,4 @@ IM.CFX,中证1000股指,StockIndex,200
 T.CFX,10年期国债,Bond,10000
 TS.CFX,2年期国债,Bond,20000
 TF.CFX,5年期国债,Bond,10000
+TL.CFX,30年期国债,Bond,10000

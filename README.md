@@ -1,3 +1,9 @@
+行情数据
+fetchDailyData：从接口获取每日所有品种行情数据
+generateMainContract：按照规则组成主连合约
+linkMainContract：将主连复权
+checkMainContract：主力合约检查
+
 MovingAverage_V1：
 参数M、N分别表示长周期和短周期均线，T表示持仓周期
 金叉时做多，死差时做空。平滑T日
