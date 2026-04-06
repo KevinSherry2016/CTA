@@ -8,7 +8,7 @@ import pandas as pd
 
 POSITION_CSV     = None     # None -> 遍历 POSITION_DIR 下全部仓位 CSV；也可指定单个文件
 POSITION_DIR     = './Result/'
-MARKET_DATA_PATH = './total/'
+MARKET_DATA_PATH = './main_contract/'
 INFO_PATH        = './Info.csv'
 OUTPUT_DIR       = './Result/'
 OUTPUT_PREFIX    = None     # 当前批量模式下不使用；保留兼容单文件模式

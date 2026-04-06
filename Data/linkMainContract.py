@@ -66,5 +66,27 @@ def process_main_contract():
         print(f'  {ts_code} 已保存至 {file_path}，共 {len(df)} 条')
 
 
+def rename_ts_code():
+    """将ts_code列改为文件名，原ts_code重命名为mapping_ts_code"""
+    files = sorted([f for f in os.listdir(main_dir) if f.endswith('.csv')])
+
+    for f in files:
+        symbol = f.replace('.csv', '')
+        file_path = os.path.join(main_dir, f)
+
+        df = pd.read_csv(file_path, dtype={'ts_code': str, 'trade_date': str})
+
+        if 'mapping_ts_code' in df.columns:
+            print(f'  {symbol} 已处理，跳过')
+            continue
+
+        df.rename(columns={'ts_code': 'mapping_ts_code'}, inplace=True)
+        df.insert(0, 'ts_code', symbol)
+
+        df.to_csv(file_path, index=False)
+        print(f'{symbol} 已完成，ts_code={symbol}，原ts_code已重命名为mapping_ts_code')
+
+
 if __name__ == '__main__':
-    process_main_contract()
+    # process_main_contract()
+    rename_ts_code()

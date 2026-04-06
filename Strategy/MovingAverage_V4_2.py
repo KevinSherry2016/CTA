@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-MARKET_DATA_PATH = './total/'
+MARKET_DATA_PATH = './main_contract/'
 INFO_PATH = './Info.csv'
 OUTPUT_DIR = './Result'
 
