@@ -1,4 +1,4 @@
-行情数据
+行情数据：
 fetchDailyData：从接口获取每日所有品种行情数据
 generateMainContract：按照规则组成主连合约
 linkMainContract：将主连复权
