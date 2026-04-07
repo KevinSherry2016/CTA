@@ -33,27 +33,8 @@ MovingAverage_V4_2：
 最优sector，合并后得到最终版本
 最后生成的仓位除以vol
 
-MovingAverage_V3_1：
-分 sector 配置不同参数，合成一个组合信号
-
-MovingAverage_V3_2：
-替换 z_score 定义，支持 (price - ma) / vol、(price / ma - 1) / vol、(price - ma) / ATR
-
-MovingAverage_V3_3：
-将趋势追踪和均值回复拆成两套独立逻辑与参数网格
-
-MovingAverage_V3_4：
-在状态机持仓基础上增加最短持仓与再入场冷却期，避免持仓过于抖动
-
-MovingAverage_V3_5：
-使用 walk-forward 方式做参数选择，并记录每个样本外窗口采用的参数
-
-MovingAverage_V3_6：
-在信号后增加趋势过滤、波动过滤和流动性过滤
-
-MovingAverage_V3_7：
-对横截面信号做 rank / z-score 标准化，再做波动率等权和 sector 风险均衡
-
+MovingAverage_5：
+在V4_1的基础上，删除z-open和z-close。使用信号强度作为仓位（z-score后）而不是状态机。
 
 Momentum_V1
 计算最近N天的return随后标准化（z-score），然后在因子层面进行cross-section比较。仅交易TOPN

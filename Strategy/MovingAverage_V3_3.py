@@ -23,7 +23,6 @@ MEAN_REVERSION_PARAM_GRID = {
     'max_hold': [5, 10, 15],
 }
 
-
 def load_market_data():
     info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
     data = {}
