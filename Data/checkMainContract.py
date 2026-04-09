@@ -5,15 +5,15 @@ main_dir = 'main_contract'
 
 
 def check_main_contract():
-    files = sorted([f for f in os.listdir(main_dir) if f.endswith('_main.csv')])
+    files = sorted([f for f in os.listdir(main_dir) if f.endswith('.csv')])
 
     contracts_by_year = {}  # {品种: {年份: [合约列表]}}
     count_by_year = {}      # {品种: {年份: 合约个数}}
     all_years = set()
 
     for f in files:
-        ts_code = f.replace('_main.csv', '')
-        df = pd.read_csv(os.path.join(main_dir, f), dtype={'trade_date': str, 'ts_code': str})
+        ts_code = f.replace('.csv', '')
+        df = pd.read_csv(os.path.join(main_dir, f), dtype={'trade_date': str, 'mapping_ts_code': str})
         df.sort_values(by='trade_date', inplace=True)
 
         contracts_by_year[ts_code] = {}
@@ -24,7 +24,7 @@ def check_main_contract():
         for year, group in df.groupby('year'):
             all_years.add(year)
             seen = []
-            for code in group['ts_code']:
+            for code in group['mapping_ts_code']:
                 if not seen or seen[-1] != code:
                     seen.append(code)
             contracts_by_year[ts_code][year] = '/'.join(seen)

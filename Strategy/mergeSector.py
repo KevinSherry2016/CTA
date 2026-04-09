@@ -7,13 +7,13 @@ RESULT_DIR = Path('./Result')
 
 # 若指定 INPUT_FILES，则优先使用该列表；否则使用 INPUT_GLOB 自动收集。
 INPUT_FILES = [
-    './Result/MovingAverageV4_2_StockIndex_slow_ma_slope_over_atr_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_Bond_slow_ma_slope_over_atr_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_Energy_fast_slow_gap_over_atr_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_Ferrous_price_minus_slow_ma_over_atr_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_NonFerrous_fast_slow_gap_over_vol_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_Precious_fast_slow_gap_over_vol_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
-    './Result/MovingAverageV4_2_Agriculture_slow_ma_slope_over_atr_F_8_S_40_ATR_15_SLP_5_ZO_0.6_ZC_0.2_T_5_trend_position_normalized.csv',
+    './Result/MovingAverageV5_REC_Precious_price_minus_slow_ma_over_atr_F_5_S_100_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
+    './Result/MovingAverageV5_REC_NonFerrous_fast_slow_gap_over_atr_F_10_S_100_ATR_15_SLP_3_ZW_60_T_5_VOL_20_trend_position_normalized.csv',
+    './Result/MovingAverageV5_REC_Ferrous_price_minus_slow_ma_over_atr_F_5_S_40_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
+    './Result/MovingAverageV5_REC_Energy_fast_slow_gap_over_vol_F_10_S_80_ATR_15_SLP_3_ZW_60_T_5_VOL_20_trend_position_normalized.csv',
+    './Result/MovingAverageV5_REC_Agriculture_price_minus_slow_ma_over_atr_F_5_S_60_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
+    # './Result/.csv',
+    # './Result/.csv',
 ]   
 INPUT_GLOB = '*_position_normalized.csv'
 
