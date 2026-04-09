@@ -155,3 +155,10 @@ google scholar
 
 时序，截面策略（delta netural策略）
 通常股指期货/债券或许会做成delta netural策略，因为相关性极高
+
+
+
+TODO：
+1. 读取20个factor意思
+2. 优化，通过分sector后合并，或者z-score
+3. 信号本身 vs 状态机
