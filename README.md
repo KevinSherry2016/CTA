@@ -116,49 +116,125 @@ V5_4更像结构性慢因子，参数自由度高了反而更容易过拟合。
 T和VOL未形成差异
 当前实验里它们基本固定，不是区分sector适配性的关键来源。
 
-
-和徐博交流：
-pot过小，因为每日signal变化很大。尤其是股指期货和债券。
-方法：
-改成状态机，或者/vol时候把时间拉大20->60
-
-黑色趋势比较强，能化次之，其余sector一般。
-是否需要剔除效果很差的品种。
-A.DCE, PF.ZCE, PG.DCE, CS.DCE, RM.ZCE
-
-不同sector是否需要不同信号计算方式和参数？
-容易overfitting
-
-因为使用同一种开仓方式，所以如果T=1，则pnl趋势相近。
-
-股指期货主力是12个月？
-
-研究方向：
-1. 再加别的因子，然后和均线因子一起组合
-2. 在趋势基础上，加ADX过滤等（因子择时）
-3. 反转信号如何做？短趋势是否也可以认为是反转？（差别只是周期不同）
-
-例如：cu 长周期趋势，短周期反转
+因子优化：
+1. 分sector后，找出最近参数后按照风险平价合并
+2. 信号本身 vs 状态机
+3. z-score vs no z-score
+4. /vol
+5. 比较correlation
 
 
-均线，动量，kdj，macd。
-量价相关性
-衍生出来的指标：流动性：涨跌幅/成交额（振幅/成交额），直接作为因子，或者作为衍生指标
+动量与趋势类因子（Trend & Momentum）
+1. 收益率因子：
+因子值 = 最近N天的收益率
+注：存在bug，应该使用adjclose计算return
 
-只取特定情况下量\价
+2. 价格均线偏离率：
+因子值 =价格/最近N天的价格均线 - 1
+注：存在bug，应该使用adjclose计算return
 
-alpha101
-google scholar
+3. 双均线交叉
+因子值 = shortma/longma -1
+注：存在bug，应该使用adjclose计算
 
-多因子的本质，是需要各类低相关性因子组合
-而不是在一个因子上深入纠结
+4. MACD
+dif = short ma - long ma
+dea = dif.ewa().mean
+MACD = (dif - dea)*2
+注：存在bug，应该使用adjclose计算，通常用到的最佳参数为12  26  9
 
-时序，截面策略（delta netural策略）
-通常股指期货/债券或许会做成delta netural策略，因为相关性极高
 
+5. 唐奇安通道位置
+因子值 = （close - 最近N天close的最小值）/（最近N天close的最大值 - 最近N天close的最小值） - 0.5
+注：存在bug，应该使用adjclose计算，通常用到的最佳参数为20
 
+6. 布林带突破
+如果：close > 最近N天close均值 + 2*std，做多
+如果：close > 最近N天close均值 - 2*std，做空
+注：存在bug，应该使用adjclose计算
 
-TODO：
-1. 读取20个factor意思
-2. 优化，通过分sector后合并，或者z-score
-3. 信号本身 vs 状态机
+7. 相对强弱指数RSI
+delta = close.diff()
+gain = (delta.where(delta > 0, 0)).rolling(window=N).mean()
+loss = (-delta.where(delta < 0, 0)).rolling(window=N).mean()
+rs = gain / (loss + 1e-9)
+rsi = 100 - (100 / (1 + rs))
+signal = (rsi - 50) / 100
+
+rs = N天内上涨幅度的均值/N天内下跌幅度的均值
+rsi = 100 - (100/(1 + rs))，范围在[0,100]之间
+因子值 = (rsi - 50)/100 ，范围在（-0.5,0.5）
+注：存在bug，应该使用adjclose计算
+
+波动率与风险类因子（Volatility & Risk）
+1. 真实波动幅度
+tr = max(high-low, abs(high - preclose), abs(low - preclose)).max
+atr = tr/close.rolling().mean()
+atr_ratio = atr / close.replace(0, np.nan)
+atr_ratio_mean = atr_ratio.rolling(window=baseline_window, min_periods=20).mean()
+atr_ratio_std = atr_ratio.rolling(window=baseline_window, min_periods=20).std()
+zscore = (atr_ratio - atr_ratio_mean) / (atr_ratio_std + 1e-12)
+因子值 = (-zscore).clip(-3, 3) / 3
+
+2. 历史收益率波动率
+ret = close.pct_change()
+hv = ret.rolling().std()
+baseline_window = 50
+hv_mean = hv.rolling(window=baseline_window, min_periods=20).mean()
+hv_std = hv.rolling(window=baseline_window, min_periods=20).std()
+zscore = (hv - hv_mean) / (hv_std + 1e-12)
+因子值 = (-zscore).clip(-3, 3) / 3
+
+3. 日内振幅
+amp = (high - low)/open或者(high - low)/close(t-1)
+amp_mean_window = amp.rolling(window=N).mean()
+baseline_window = 50
+amp_baseline_mean = amp_mean_window.rolling(window=baseline_window, min_periods=20).mean()
+amp_baseline_std = amp_mean_window.rolling(window=baseline_window, min_periods=20).std()
+zscore = (amp_mean_window - amp_baseline_mean) / (amp_baseline_std + 1e-12)
+signal = (-zscore).clip(-3, 3) / 3
+
+4. 上下行波动率倾向
+因子 = (上涨收益率的波动 - 下跌收益率的波动) / (上涨收益率 + 下跌收益率波动)
+
+成交量与持仓量类因子（Volume & Open Interest）
+1. 成交量/持仓量动量
+因子值 = 成交量/最近N天成交量均值 -1 （或持仓量）
+注：
+在此基础上，添加方向条件用以过滤
+
+2. 量价相关性
+因子值 = N天return和成交量变化的correlation
+
+3. 能量潮指标（OBV - On Balance Volume）
+direction = np.sign(close.diff())
+obv = (direction * volume).cumsum()
+因子值 = obv / obv.rolling(window=N).mean() - 1
+注：
+用以衡量资金的净流进和流出
+
+4. 持仓量变化率
+因子值 = oi / oi.shift(N) - 1
+
+截面与非对称性因子（Cross-sectional & Asymmetry）
+1. 收益率偏度
+因子值 = ret.rolling(window=N).skew()
+
+2. 收益率峰度
+因子值 = -ret.rolling(window=N).kurt()
+注：
+pandas中，计算的是超额峰度
+
+3. 隔夜与日内收益率差异
+IntradayRet：close / open -1
+OvernightRet： open / close(t-1) - 1
+因子值 = (IntradayRet - OvernightRet).rolling().mean()
+
+微观结构演化
+1. amihud 缺乏流动性指标
+|return|/Volume，衡量单位成交量可以推动多大价格变化，反应流动性
+因子值 = return.abs/volume后进行z-score
+
+2. 买卖压力
+(close - low) / (high - low)，越接近1，表示收盘越强势。
+因子值 = (((close - low) / (high - low))-0.5)*2

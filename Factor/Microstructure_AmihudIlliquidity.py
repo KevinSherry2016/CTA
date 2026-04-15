@@ -54,7 +54,12 @@ def main():
         # --- 因子计算逻辑 ---
         ret = close.pct_change()
         illq = ret.abs() / (volume + 1e-9)
-        signal = -illq.rolling(window=N).mean()
+        illq_mean = illq.rolling(window=N).mean()
+        baseline_window = 120
+        illq_baseline_mean = illq_mean.rolling(window=baseline_window, min_periods=30).mean()
+        illq_baseline_std = illq_mean.rolling(window=baseline_window, min_periods=30).std()
+        zscore = (illq_mean - illq_baseline_mean) / (illq_baseline_std + 1e-12)
+        signal = (-zscore).clip(-3, 3) / 3
         # --------------------
 
         # 填充到position_series (NaN填为0)

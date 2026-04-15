@@ -53,7 +53,8 @@ def main():
 
         # --- 因子计算逻辑 ---
         pressure = (close - low) / (high - low + 1e-9)
-        signal = pressure.rolling(window=N).mean()
+        pressure_ma = pressure.rolling(window=N).mean()
+        signal = (pressure_ma - 0.5) * 2
         # --------------------
 
         # 填充到position_series (NaN填为0)

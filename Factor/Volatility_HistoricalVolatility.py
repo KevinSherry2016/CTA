@@ -53,7 +53,13 @@ def main():
 
         # --- 因子计算逻辑 ---
         ret = close.pct_change()
-        signal = -ret.rolling(window=N).std()
+        hv = ret.rolling(window=N).std()
+        # Use normalized HV deviation so signal can be both positive and negative.
+        baseline_window = 50
+        hv_mean = hv.rolling(window=baseline_window, min_periods=20).mean()
+        hv_std = hv.rolling(window=baseline_window, min_periods=20).std()
+        zscore = (hv - hv_mean) / (hv_std + 1e-12)
+        signal = (-zscore).clip(-3, 3) / 3
         # --------------------
 
         # 填充到position_series (NaN填为0)
