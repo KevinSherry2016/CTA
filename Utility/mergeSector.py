@@ -7,13 +7,11 @@ RESULT_DIR = Path('./Result')
 
 # 若指定 INPUT_FILES，则优先使用该列表；否则使用 INPUT_GLOB 自动收集。
 INPUT_FILES = [
-    './Result/MovingAverageV5_REC_Precious_price_minus_slow_ma_over_atr_F_5_S_100_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
-    './Result/MovingAverageV5_REC_NonFerrous_fast_slow_gap_over_atr_F_10_S_100_ATR_15_SLP_3_ZW_60_T_5_VOL_20_trend_position_normalized.csv',
-    './Result/MovingAverageV5_REC_Ferrous_price_minus_slow_ma_over_atr_F_5_S_40_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
-    './Result/MovingAverageV5_REC_Energy_fast_slow_gap_over_vol_F_10_S_80_ATR_15_SLP_3_ZW_60_T_5_VOL_20_trend_position_normalized.csv',
-    './Result/MovingAverageV5_REC_Agriculture_price_minus_slow_ma_over_atr_F_5_S_60_ATR_15_SLP_3_noZ_T_5_VOL_20_trend_position_normalized.csv',
-    # './Result/.csv',
-    # './Result/.csv',
+    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Precious_N40_Smooth10_position_normalized.csv',
+    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_NonFerrous_N40_Smooth10_position_normalized.csv',
+    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Ferrous_N20_Smooth10_position_normalized.csv',
+    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Energy_N40_Smooth10_position_normalized.csv',
+    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Agriculture_N40_Smooth10_position_normalized.csv',
 ]   
 INPUT_GLOB = '*_position_normalized.csv'
 

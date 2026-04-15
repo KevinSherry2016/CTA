@@ -12,8 +12,8 @@ MARKET_DATA_PATH = './main_contract/'
 INFO_PATH        = './Info.csv'
 OUTPUT_DIR       = './Result/'
 OUTPUT_PREFIX    = None     # 当前批量模式下不使用；保留兼容单文件模式
-NORM_START_DATE  = None     # 标准化计算的起始日期，格式 'YYYYMMDD'，None 表示不限
-NORM_END_DATE    = None     # 标准化计算的结束日期，格式 'YYYYMMDD', None 表示不限
+NORM_START_DATE  = '20150101'     # 标准化计算的起始日期，格式 'YYYYMMDD'，None 表示不限
+NORM_END_DATE    = '20201231'     # 标准化计算的结束日期，格式 'YYYYMMDD', None 表示不限
 
 SUMMARY_METRICS_CSV = 'all_metrics_summary.csv'
 
@@ -363,8 +363,8 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     plot_cumulative_pnl(trade_dates, norm_daily_pnl, metrics, cumulative_pnl_png_out)
 
     # 7. 单策略 metrics
-    metrics_csv_out = output_dir / f'{output_prefix}_metrics.csv'
-    pd.DataFrame([metrics]).to_csv(metrics_csv_out, index=False, encoding='utf-8-sig')
+    # metrics_csv_out = output_dir / f'{output_prefix}_metrics.csv'
+    # pd.DataFrame([metrics]).to_csv(metrics_csv_out, index=False, encoding='utf-8-sig')
 
     print(f'\n评估完成: {position_csv_path.name}')
     print(f'  Sharpe Ratio      : {metrics["sharpeRatio"]:.2f}')
@@ -377,7 +377,7 @@ def evaluate_one_position_file(position_csv_path, output_dir, info):
     print(f'  Sector PnL 图 : {sector_png_out.name}')
     # print(f'  工作日分布图   : {weekday_png_out.name}')
     print(f'  累计 PnL 图   : {cumulative_pnl_png_out.name}')
-    print(f'  指标 CSV      : {metrics_csv_out.name}')
+    # print(f'  指标 CSV      : {metrics_csv_out.name}')
 
     metrics_row = {'strategyFile': position_csv_path.name}
     metrics_row.update(metrics)

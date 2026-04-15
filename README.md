@@ -168,6 +168,9 @@ OvernightRet： open / close(t-1) - 1
 微观结构演化中1
 
 
+收益率因子：
+Ferrous 20，其余40，都使用状态机
 
-1. factor思路 -> 批量回测（sector，状态机，是否z-score）-> 找出较好的结果
-2. 找出低相关性factor -> 组合
+
+
+
