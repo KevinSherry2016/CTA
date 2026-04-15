@@ -44,10 +44,10 @@ def main():
     print(f"开始计算 Volatility_DownsideUpsideVolatility 因子信号...")
     for ts_code, df in data.items():
         # 获取需要的数据列
-        close = df.get('close', df.get('Close', pd.Series(dtype=float)))
-        open_p = df.get('open', df.get('Open', pd.Series(dtype=float)))
-        high = df.get('high', df.get('High', pd.Series(dtype=float)))
-        low = df.get('low', df.get('Low', pd.Series(dtype=float)))
+        close = df['adj_close']
+        open_p = df['adj_open']
+        high = df['adj_high']
+        low = df['adj_low']
         volume = df.get('vol', df.get('Volume', pd.Series(dtype=float)))
         oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
 

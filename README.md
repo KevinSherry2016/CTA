@@ -120,8 +120,9 @@ T和VOL未形成差异
 1. 分sector后，找出最近参数后按照风险平价合并
 2. 信号本身 vs 状态机
 3. z-score vs no z-score
-4. /vol
-5. 比较correlation
+4. 参数高原寻优
+5. /vol
+6. 比较correlation
 
 
 动量与趋势类因子（Trend & Momentum）
