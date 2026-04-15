@@ -117,42 +117,35 @@ T和VOL未形成差异
 当前实验里它们基本固定，不是区分sector适配性的关键来源。
 
 因子优化：
-1. 分sector后，找出最近参数后按照风险平价合并
+1. 分sector后，找出最近参数后按照风险平价合并（/vol，不交易股指期货，国债期货，Others）
 2. 信号本身 vs 状态机
 3. z-score vs no z-score
 4. 参数高原寻优
-5. /vol
-6. 比较correlation
-
+5. 比较correlation（尤其2015年之后的）
 
 动量与趋势类因子（Trend & Momentum）
 1. 收益率因子：
 因子值 = 最近N天的收益率
-注：存在bug，应该使用adjclose计算return
 
 2. 价格均线偏离率：
 因子值 =价格/最近N天的价格均线 - 1
-注：存在bug，应该使用adjclose计算return
 
 3. 双均线交叉
 因子值 = shortma/longma -1
-注：存在bug，应该使用adjclose计算
 
 4. MACD
 dif = short ma - long ma
 dea = dif.ewa().mean
 MACD = (dif - dea)*2
-注：存在bug，应该使用adjclose计算，通常用到的最佳参数为12  26  9
-
+注：通常用到的最佳参数为12  26  9
 
 5. 唐奇安通道位置
 因子值 = （close - 最近N天close的最小值）/（最近N天close的最大值 - 最近N天close的最小值） - 0.5
-注：存在bug，应该使用adjclose计算，通常用到的最佳参数为20
+注：通常用到的最佳参数为20
 
 6. 布林带突破
 如果：close > 最近N天close均值 + 2*std，做多
 如果：close > 最近N天close均值 - 2*std，做空
-注：存在bug，应该使用adjclose计算
 
 7. 相对强弱指数RSI
 delta = close.diff()
@@ -161,11 +154,9 @@ loss = (-delta.where(delta < 0, 0)).rolling(window=N).mean()
 rs = gain / (loss + 1e-9)
 rsi = 100 - (100 / (1 + rs))
 signal = (rsi - 50) / 100
-
 rs = N天内上涨幅度的均值/N天内下跌幅度的均值
 rsi = 100 - (100/(1 + rs))，范围在[0,100]之间
 因子值 = (rsi - 50)/100 ，范围在（-0.5,0.5）
-注：存在bug，应该使用adjclose计算
 
 波动率与风险类因子（Volatility & Risk）
 1. 真实波动幅度
