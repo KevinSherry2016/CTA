@@ -138,6 +138,17 @@ for sector, ts_codes in sector_map.items():
         })
         corr_matrix = sector_pnl_df.corr(method='pearson')
         corr_matrix.to_csv(os.path.join(OUTPUT_DIR, f'Factor_Correlation_{sector}.csv'))
-        print(f"Saved {sector} correlation matrix")
+        
+        # 绘制并保存热力图
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(16, 14))
+        sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", center=0, square=True)
+        plt.title(f"Factor Correlation Heatmap - {sector}")
+        plt.tight_layout()
+        plt.savefig(os.path.join(OUTPUT_DIR, f'Factor_Correlation_{sector}_Heatmap.png'))
+        plt.close()
+        
+        print(f"Saved {sector} correlation matrix and heatmap")
 
 print('Finished calculating correlations.')
