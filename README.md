@@ -49,80 +49,8 @@ MovingAverage_5_3：
 MovingAverage_5_4：
 信号 = (slow_ma - slow_ma.shift(slp_k)) / ATR，z-score作为开关
 
-Momentum_V1
-计算最近N天的return随后标准化（z-score），然后在因子层面进行cross-section比较。仅交易TOPN
-最后生成的仓位再除以vol
 
-
-交流
-5. 什么是kdj/rsi做动量？（每个指标都可以做趋势或者反转）
-7. 反转具体怎么做？（和return的相关性）
-11. 状态过滤因子，例如ADX/R-squared of trend regression/Choppiness Index/均线发散度/波动率分位数等，用于过滤震荡市(很多判断方法)
-14. 因子的有效性、衰减（markout看延迟开仓衰减速度，和交易相关 CDF）
-因子失效的情况：
-第一：周期性失效
-第二：机器学习，数据挖掘出的因子，不可解释的，如果pnl表现不好
-15. 股指期货趋势策略常用的参数大概什么范围（一个月，一个季度,120天）
-
-
-z-score 后变好：往往说明原信号在不同波动/不同 regime 下尺度漂移很大（非平稳），用 z-score 做了“自适应尺度校准”，减少了某些时期过度加仓/过度交易。
-z-score 后变差：往往说明原信号的“绝对水平”本身有信息（例如趋势强度越大越可靠），你把它改成“相对异常”后，反而削弱了可交易强度。
-
-
-稳定受益于 z-score：Energy（四种信号都明显提升）。
-稳定受损：Bond、Precious（四种信号几乎都下降）。
-混合型：StockIndex、Other、All（取决于信号定义）。
-
-
-一、先看四种信号各自偏好什么市场结构
-V5_1: (fast-slow)/波动率
-偏“趋势强度归一化”，适合有持续单边段、且波动会阶段性放大的品种。
-V5_2: (fast-slow)/ATR
-和V5_1类似，但ATR对跳空和日内振幅更敏感，适合波动冲击更频繁的品种。
-V5_3: (price-slow)/ATR
-偏“偏离慢均线后的再定价”，更像抓中期偏离和回归-再趋势化切换。
-V5_4: slow slope/ATR
-偏“慢趋势斜率”，更稳但更钝，适合中长趋势清晰、噪声较高的场景。
-
-二、为什么不同sector匹配不同信号
-Energy 适合 V5_1 + z-score
-能源常见趋势脉冲+波动扩张，V5_1直接刻画“快慢差强度”，z-score做尺度校准后能减少极端波动期的仓位失真。
-Bond 适合 V5_1 noZ
-债券趋势往往慢而平滑，绝对趋势幅度本身有信息。z-score把这种绝对幅度“去量纲”后，反而削弱信号。
-Ferrous 适合 V5_3（noZ更优，Z可备选）
-黑色链条有中期景气与库存周期，价格相对慢均线偏离的信息量大。V5_3高原宽说明不是靠某个点参数吃饭。
-NonFerrous 适合 V5_2（稳健优先用Z）
-有色受宏观和风险偏好共同驱动，波动冲击多。ATR归一化更合理，z-score后参数高原变宽，鲁棒性更强。
-Precious 适合 noZ（V5_3稳健，V5_4高峰）
-贵金属受宏观叙事驱动，趋势强度绝对值常有信息，z-score后显著受损，说明“相对异常”替代“绝对强度”不合适。
-StockIndex 适合 V5_3 + z-score
-股指常见“偏离慢均线后再趋势化”，V5_3更贴合，z-score能抑制不同时期波动尺度漂移。
-Agriculture 适合 V5_3 noZ（V5_4可做进攻）
-农产品受季节性和供需扰动影响，慢均线偏离型信号更稳。V5_4峰值高但高原窄，容易变成参数孤岛。
-Other 适合 V5_3 + z-score
-该组异质性高，过“尖”的高分方案容易是孤岛。V5_3虽然峰值不最高，但参数带更连续，更适合实盘。
-All 用 V5_3/V5_1/V5_2 noZ 组合更合理
-全品种聚合时，追求单点最高意义下降，跨品种稳定性更重要，高原宽方案更优。
-
-三、参数为什么会长成现在这个样子
-F普遍较短（5到20）
-短均线负责捕捉启动，过长会错过拐点。
-S在不同sector明显分层
-Bond常偏长S（100到120）说明慢趋势主导。Energy/All多在40到100，反映中期趋势更有效。
-ATR多固定在15仍有效
-说明“波动基准窗口”在这批数据里不需要很细调，主要差异来自F/S与是否z-score。
-SLP只在V5_4中固定值有效
-V5_4更像结构性慢因子，参数自由度高了反而更容易过拟合。
-T和VOL未形成差异
-当前实验里它们基本固定，不是区分sector适配性的关键来源。
-
-因子优化：
-1. 分sector后，找出最近参数后按照风险平价合并（/vol，不交易股指期货，国债期货，Others）
-2. 信号本身 vs 状态机
-3. z-score vs no z-score
-4. 参数高原寻优
-5. 比较correlation（尤其2015年之后的）
-
+因子库：
 动量与趋势类因子（Trend & Momentum）
 1. 收益率因子：
 因子值 = 最近N天的收益率
@@ -167,6 +95,7 @@ atr_ratio_mean = atr_ratio.rolling(window=baseline_window, min_periods=20).mean(
 atr_ratio_std = atr_ratio.rolling(window=baseline_window, min_periods=20).std()
 zscore = (atr_ratio - atr_ratio_mean) / (atr_ratio_std + 1e-12)
 因子值 = (-zscore).clip(-3, 3) / 3
+
 
 2. 历史收益率波动率
 ret = close.pct_change()
@@ -230,3 +159,15 @@ OvernightRet： open / close(t-1) - 1
 2. 买卖压力
 (close - low) / (high - low)，越接近1，表示收盘越强势。
 因子值 = (((close - low) / (high - low))-0.5)*2
+
+
+没有明显涨跌意义，仅适合做过滤：
+波动率与风险类因子（Volatility & Risk）中 1,2,3
+成交量与持仓量类因子（Volume & Open Interest）中 1,4
+截面与非对称性因子（Cross-sectional & Asymmetry）中 1，2
+微观结构演化中1
+
+
+
+1. factor思路 -> 批量回测（sector，状态机，是否z-score）-> 找出较好的结果
+2. 找出低相关性factor -> 组合
