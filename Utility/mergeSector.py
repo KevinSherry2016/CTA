@@ -7,11 +7,11 @@ RESULT_DIR = Path('./Result')
 
 # 若指定 INPUT_FILES，则优先使用该列表；否则使用 INPUT_GLOB 自动收集。
 INPUT_FILES = [
-    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Precious_N40_Smooth10_position_normalized.csv',
-    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_NonFerrous_N40_Smooth10_position_normalized.csv',
-    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Ferrous_N20_Smooth10_position_normalized.csv',
-    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Energy_N40_Smooth10_position_normalized.csv',
-    './Result/TrendMomentum_TimeSeriesMomentum_StateMachine_Position_Agriculture_N40_Smooth10_position_normalized.csv',
+    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Precious_N20_Smooth10_position_normalized.csv',
+    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_NonFerrous_N20_Smooth10_position_normalized.csv',
+    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Ferrous_N20_Smooth10_position_normalized.csv',
+    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Energy_N40_Smooth10_position_normalized.csv',
+    './Result/CrossSectional_OvernightVsIntraday_NoZscore_Position_Agriculture_N50_Smooth10_position_normalized.csv',
 ]   
 INPUT_GLOB = '*_position_normalized.csv'
 

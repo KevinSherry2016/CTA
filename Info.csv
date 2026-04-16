@@ -19,7 +19,6 @@ LU.INE,低硫燃料油,Energy,10
 BU.SHF,沥青,Energy,10
 RU.SHF,天然橡胶,Energy,10
 SP.SHF,纸浆,Energy,10
-OP.SHF,胶版印刷纸,Energy,10
 A.DCE,黄大豆1号,Agriculture,10
 B.DCE,黄大豆2号,Agriculture,10
 M.DCE,豆粕,Agriculture,10
@@ -29,7 +28,6 @@ C.DCE,玉米,Agriculture,10
 CS.DCE,玉米淀粉,Agriculture,10
 JD.DCE,鸡蛋,Agriculture,5
 LH.DCE,生猪,Agriculture,16
-LG.DCE,LPG,Energy,20
 JM.DCE,焦煤,Ferrous,60
 J.DCE,焦炭,Ferrous,100
 I.DCE,铁矿石,Ferrous,100
@@ -44,7 +42,6 @@ CF.ZCE,棉花,Agriculture,5
 SR.ZCE,白糖,Agriculture,10
 OI.ZCE,菜籽油,Agriculture,10
 RM.ZCE,菜粕,Agriculture,10
-CY.ZCE,棉纱,Agriculture,5
 AP.ZCE,苹果,Agriculture,10
 TA.ZCE,PTA,Energy,5
 MA.ZCE,甲醇,Energy,10
