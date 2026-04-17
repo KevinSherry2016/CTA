@@ -52,7 +52,17 @@ def main():
         oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
 
         # --- 因子计算逻辑 ---
+        # 1. 判断换月：通过复权因子变动进行判断
+        raw_close = df.get('close', close)
+        adj_factor = close / raw_close.replace(0, np.nan)
+        is_rollover = adj_factor.diff().abs() > 1e-5
+        
+        # 2. 计算持仓变动并处理换月失真：只要过去N天内发生过换月，直接剔除并用 ffill 继承之前信号
+        invalid_window = is_rollover.rolling(window=N, min_periods=1).max() > 0
+        
         signal = oi / oi.shift(N) - 1
+        signal[invalid_window] = np.nan
+        signal = signal.ffill()
         # --------------------
 
         # 填充到position_series (NaN填为0)

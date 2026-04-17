@@ -116,25 +116,6 @@ OvernightRet： open / close(t-1) - 1
 微观结构演化中1
 
 
-收益率因子：
-Ferrous 20，其余40，都使用状态机
-
-
-MACD因子：
-农产品、能化、黑色  100  z-score
-有色、贵金属 80 状态机
-
-
-OvernightVsIntraday因子
-农产品：50  No z-score
-能化  40  状态机
-铁、有色、贵金属  20  状态机
-
-思路：
-1. 同一种信号，不同周期策略合成
-2. 剔除一些难做的品种，只做主要品种
-3. 大趋势 +  过滤（放大）
-
 量价关系很典型：
 放量上涨 + 持仓增加 -> 趋势强化
 放量下跌 + 持仓增加 -> 空头趋势强化
@@ -148,18 +129,12 @@ OvernightVsIntraday因子
 核心思路：
 用动量/均线做方向骨架，用成交量/持仓量做趋势确认，用波动率因子做环境识别和风险缩放，用微观因子做入场择时和持仓微调，再通过板块约束实现组合层面的稳定化。
 
-注意：
-成交量/持仓量在换月时的处理：
-只在同一合约内计算
-换月日及之后 3~5 天：主力量仓变化因子降权或禁用
-
 结论：
 黑色板块：
 1. 使用均线和动量骨架，比只使用一个框架明显提升
 2. 使用 Vol/OI等并无明显效果
 3. IntradayOvernight相关性0.78，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
 4. BuySellPressure因子相关性0.66，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
-
 
 
 思路：
@@ -171,5 +146,3 @@ ATR始终为正
 Amihudquality缺乏流动性指标始终为正
 HistoricalVol始终为正
 IntradayAmplitude
-OpenInterestROC应该要考虑换月
-VolumeMomentum应该要考虑换月

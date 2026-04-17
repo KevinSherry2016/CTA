@@ -38,7 +38,8 @@ def main():
             data[ts_code] = df
 
     # 参数
-    N = 20
+    SHORT_N = 10
+    LONG_N = 40
     position_series = {}
 
     print(f"开始计算 TrendMomentum_DualMACrossover 因子信号...")
@@ -52,9 +53,9 @@ def main():
         oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
 
         # --- 因子计算逻辑 ---
-        short_ma = close.rolling(window=10).mean()
-        long_ma = close.rolling(window=40).mean()
-        signal = (short_ma / long_ma - 1).apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
+        short_ma = close.rolling(window=SHORT_N).mean()
+        long_ma = close.rolling(window=LONG_N).mean()
+        signal = (short_ma / long_ma - 1).apply(lambda x: np.sign(x) if pd.notna(x) else np.nan)
         # --------------------
 
         # 填充到position_series (NaN填为0)
