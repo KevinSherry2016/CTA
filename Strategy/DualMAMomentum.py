@@ -20,7 +20,7 @@ def main():
     info = pd.read_csv(infoPath, encoding='utf-8-sig')
     EXCLUDE_SECTORS = ['stockindex', 'bond', 'other', 'others', 'financial']
     TARGET_SECTORS = ['Ferrous']  # 只需要测试Ferrous板块
-    EXCLUDE_SYMBOLS = []  # 增加特定品种过滤（如需过滤可填入品种代码，例如 ['A.DCE']）
+    EXCLUDE_SYMBOLS = ['SF.ZCE','SM.ZCE','SS.SHF']  # 增加特定品种过滤（如需过滤可填入品种代码，例如 ['A.DCE']）
 
     valid_info = info[~info['sector'].astype(str).str.lower().isin(EXCLUDE_SECTORS)].copy()
     if EXCLUDE_SYMBOLS:
