@@ -1,55 +1,3 @@
-行情数据：
-fetchDailyData：从接口获取每日所有品种行情数据
-generateMainContract：按照规则组成主连合约
-linkMainContract：将主连复权
-checkMainContract：主力合约检查
-
-MovingAverage_V1：
-参数M、N分别表示长周期和短周期均线，T表示持仓周期
-金叉时做多，死差时做空。平滑T日
-
-MovingAverage_V2：
-参数M分别表示周期均线，N表示持仓周期，z_open表示开仓阈值
-价格进行z_score处理后，如果>z_open做多，如果<-z_open做空
-
-MovingAverage_V3：
-参数M分别表示周期均线，z_open表示开仓阈值，z_close表示平仓阈值，max_hold表示最长持仓天数
-signal可以选择趋势追踪或者反转
-计算z_score，在满足开仓条件后开仓，在满足平仓条件或者达到最长持仓天数时平仓
-
-MovingAverage_V4：
-参数FAST_M_LIST分别表示短周期均线，SLOW_M_LIST表示长周期均线，z_open表示开仓阈值，z_close表示平仓阈值
-signal可以选择趋势追踪或者反转
-计算z_score，在满足开仓条件后开仓，在满足平仓条件时平仓
-
-MovingAverage_V4_1：
-优化了参数
-增加了信号定义（共计4种）
-支持分sector/全品种回测
-参数T表示将每日仓位平滑T日
-最后生成的仓位除以vol
-
-MovingAverage_V4_2：
-最优sector，合并后得到最终版本
-最后生成的仓位除以vol
-
-MovingAverage_5：
-在V4_1的基础上，删除z-open和z-close。使用信号强度作为仓位（z-score后）而不是状态机。
-
-MovingAverage_5_1：
-信号 = (fast_ma - slow_ma) / 收盘价滚动标准差，z-score作为开关
-
-MovingAverage_5_2：
-信号 = (fast_ma - slow_ma) / ATR，z-score作为开关
-
-
-MovingAverage_5_3：
-信号 = (收盘价 - slow_ma) / ATR，z-score作为开关
-
-MovingAverage_5_4：
-信号 = (slow_ma - slow_ma.shift(slp_k)) / ATR，z-score作为开关
-
-
 因子库：
 动量与趋势类因子（Trend & Momentum）
 1. 收益率因子：
@@ -177,18 +125,30 @@ MACD因子：
 有色、贵金属 80 状态机
 
 
-PriceVolumeCorrelation因子
+OvernightVsIntraday因子
 农产品：50  No z-score
 能化  40  状态机
 铁、有色、贵金属  20  状态机
 
+思路：
+1. 同一种信号，不同周期策略合成
+2. 剔除一些难做的品种，只做主要品种
+3. 大趋势 +  过滤（放大）
 
-黑色系表现较差品种：
-sm  sf  ss（剔除）
+量价关系很典型：
+放量上涨 + 持仓增加 -> 趋势强化
+放量下跌 + 持仓增加 -> 空头趋势强化
 
-农产品板块：
-建议配置：
-油、粕（两者最高优先级），玉米、棉花、白糖、苹果、玉米
+黑色系
+能源化工
+贵金属
+核心有色（铜、铝）
+部分农产品（油脂油料、白糖、棉花）
 
-剔除：
-大豆，生猪，红枣，鸡蛋、棉纱
+核心思路：
+用动量/均线做方向骨架，用成交量/持仓量做趋势确认，用波动率因子做环境识别和风险缩放，用微观因子做入场择时和持仓微调，再通过板块约束实现组合层面的稳定化。
+
+注意：
+成交量/持仓量在换月时的处理：
+只在同一合约内计算
+换月日及之后 3~5 天：主力量仓变化因子降权或禁用

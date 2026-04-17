@@ -22,14 +22,23 @@ def main():
     # 1. 过滤品种与划分板块
     info = pd.read_csv(infoPath, encoding='utf-8-sig')
     EXCLUDE_SECTORS = ['stockindex', 'bond', 'other', 'others', 'financial']
-    sector_map = info.groupby('sector')['ts_code'].apply(list).to_dict()
+    # 指定要回测的品种列表（为空代表全部有效品种，如 ['RB.SHF', 'HC.SHF']）
+    TARGET_SYMBOLS = []
+    # 指定要排除的品种列表（为空代表不排除，如 ['A.DCE']）
+    EXCLUDE_SYMBOLS = ['SF.ZCE','SM.ZCE','SS.SHF','A.DCE','B.DCE','LH.DCE','JD.DCE']
+    valid_info = info[~info['sector'].astype(str).str.lower().isin(EXCLUDE_SECTORS)].copy()
+    if TARGET_SYMBOLS:
+        valid_info = valid_info[valid_info['ts_code'].isin(TARGET_SYMBOLS)]
+    if EXCLUDE_SYMBOLS:
+        valid_info = valid_info[~valid_info['ts_code'].isin(EXCLUDE_SYMBOLS)]
+    sector_map = valid_info.groupby('sector')['ts_code'].apply(list).to_dict()
 
     # 2. 提取日度行情数据
     data = {}
     print(f"正在加载 TrendMomentum_TimeSeriesMomentum 数据...")
 
     tradingDayList = []
-    for ts_code in info['ts_code']:
+    for ts_code in valid_info['ts_code']:
         filepath = os.path.join(marketDataPath, f"{ts_code}.csv")
         if os.path.exists(filepath):
             df = pd.read_csv(filepath, dtype={'trade_date': str})
@@ -46,13 +55,13 @@ def main():
 
     # ========== 回测指定设置 ==========
     # 指定要回测的板块列表（为空代表全部有效板块，如 ['Black', 'Chemical']）
-    TARGET_SECTORS = ['Precious']
+    TARGET_SECTORS = ['Chemical', 'Agriculture']
     # 指定要获取计算的参数列表（为空代表默认测试 N_LIST 所有候选，如 [20, 40])
-    TARGET_PARAMS = [40]
+    TARGET_PARAMS = []
     # 指定要计算的信号处理模式（为空代表全部计算，可选：'No zscore', 'zscore', 'State Machine'）
     TARGET_MODES = ['State Machine']
     # 评判最优参数的基准模式（决定将什么参数下的品种仓位选入最终投资组合中，当该模式未计算时采用列表第一个计算的模式）
-    EVAL_MODE = 'No zscore'
+    EVAL_MODE = 'State Machine'
     # 仓位平滑天数（1代表不平滑，大于1代表进行N天滚动平均平滑）
     POSITION_SMOOTH_DAYS = 10
     # ==================================
@@ -80,6 +89,7 @@ def main():
         
         for N in test_n_list:
             pnl_noz, pnl_z, pnl_sm = [], [], []
+            turnover_noz, turnover_z, turnover_sm = [], [], []
             temp_pos_noz, temp_pos_z, temp_pos_sm = {}, {}, {}
             
             for ts_code in valid_symbols:
@@ -97,37 +107,47 @@ def main():
                 if not TARGET_MODES or 'No zscore' in TARGET_MODES:
                     pos_noz = raw_sig / vol
                     if POSITION_SMOOTH_DAYS > 1:
-                        pos_noz = pos_noz.rolling(POSITION_SMOOTH_DAYS).mean()
+                        pos_noz = pos_noz.ewm(span=POSITION_SMOOTH_DAYS, adjust=False).mean()
                     temp_pos_noz[ts_code] = pos_noz
                     pnl_noz.append(pos_noz.shift(1) * daily_ret)
+                    turnover_noz.append(pos_noz.diff().abs().fillna(0))
                 
                 if not TARGET_MODES or 'zscore' in TARGET_MODES:
                     z_sig = rolling_zscore(raw_sig, 60)
                     pos_z = z_sig / vol
                     if POSITION_SMOOTH_DAYS > 1:
-                        pos_z = pos_z.rolling(POSITION_SMOOTH_DAYS).mean()
+                        pos_z = pos_z.ewm(span=POSITION_SMOOTH_DAYS, adjust=False).mean()
                     temp_pos_z[ts_code] = pos_z
                     pnl_z.append(pos_z.shift(1) * daily_ret)
+                    turnover_z.append(pos_z.diff().abs().fillna(0))
                     
                 if not TARGET_MODES or 'State Machine' in TARGET_MODES:
                     sm_sig = np.sign(raw_sig)
                     pos_sm = sm_sig / vol
                     if POSITION_SMOOTH_DAYS > 1:
-                        pos_sm = pos_sm.rolling(POSITION_SMOOTH_DAYS).mean()
+                        pos_sm = pos_sm.ewm(span=POSITION_SMOOTH_DAYS, adjust=False).mean()
                     temp_pos_sm[ts_code] = pos_sm
                     pnl_sm.append(pos_sm.shift(1) * daily_ret)
+                    turnover_sm.append(pos_sm.diff().abs().fillna(0))
 
             # 汇总当天组合盈亏并计算夏普比率
             sharpe_dict = {}
+            pot_dict = {}
             if pnl_noz:
                 df_noz = pd.concat(pnl_noz, axis=1).sum(axis=1)
                 sharpe_dict['No zscore'] = df_noz.mean() / df_noz.std() * np.sqrt(252) if df_noz.std() > 0 else 0
+                tv_noz = pd.concat(turnover_noz, axis=1).sum(axis=1)
+                pot_dict['No zscore'] = df_noz.sum() / tv_noz.sum() * 10000 if tv_noz.sum() > 0 else 0
             if pnl_z:
                 df_z = pd.concat(pnl_z, axis=1).sum(axis=1)
                 sharpe_dict['zscore'] = df_z.mean() / df_z.std() * np.sqrt(252) if df_z.std() > 0 else 0
+                tv_z = pd.concat(turnover_z, axis=1).sum(axis=1)
+                pot_dict['zscore'] = df_z.sum() / tv_z.sum() * 10000 if tv_z.sum() > 0 else 0
             if pnl_sm:
                 df_sm = pd.concat(pnl_sm, axis=1).sum(axis=1)
                 sharpe_dict['State Machine'] = df_sm.mean() / df_sm.std() * np.sqrt(252) if df_sm.std() > 0 else 0
+                tv_sm = pd.concat(turnover_sm, axis=1).sum(axis=1)
+                pot_dict['State Machine'] = df_sm.sum() / tv_sm.sum() * 10000 if tv_sm.sum() > 0 else 0
                 
             # 记录表格列名所需的各个sector在不同状态和参数下的sharpRatio值
             record = {
@@ -137,6 +157,9 @@ def main():
             if 'No zscore' in sharpe_dict: record['Sharpe (No zscore)'] = round(sharpe_dict['No zscore'], 4)
             if 'zscore' in sharpe_dict: record['Sharpe (zscore)'] = round(sharpe_dict['zscore'], 4)
             if 'State Machine' in sharpe_dict: record['Sharpe (State Machine)'] = round(sharpe_dict['State Machine'], 4)
+            if 'No zscore' in pot_dict: record['POT (No zscore)'] = round(pot_dict['No zscore'], 4)
+            if 'zscore' in pot_dict: record['POT (zscore)'] = round(pot_dict['zscore'], 4)
+            if 'State Machine' in pot_dict: record['POT (State Machine)'] = round(pot_dict['State Machine'], 4)
             results.append(record)
             
             # 使用作为基准模式的夏普作为选参依据 (若指定的基准未计算，则默认兜底取计算的第一个夏普作为打分基准)
