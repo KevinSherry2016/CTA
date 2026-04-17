@@ -57,13 +57,7 @@ def main():
         tr3 = (low - close.shift(1)).abs()
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         atr = tr.rolling(window=N).mean()
-        # Use normalized ATR deviation so signal can be both positive and negative.
-        atr_ratio = atr / close.replace(0, np.nan)
-        baseline_window = 50
-        atr_ratio_mean = atr_ratio.rolling(window=baseline_window, min_periods=20).mean()
-        atr_ratio_std = atr_ratio.rolling(window=baseline_window, min_periods=20).std()
-        zscore = (atr_ratio - atr_ratio_mean) / (atr_ratio_std + 1e-12)
-        signal = (-zscore).clip(-3, 3) / 3
+        signal = atr / close.replace(0, np.nan)
         # --------------------
 
         # 填充到position_series (NaN填为0)

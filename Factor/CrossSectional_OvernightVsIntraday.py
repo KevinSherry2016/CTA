@@ -55,11 +55,11 @@ def main():
 
     # ========== 回测指定设置 ==========
     # 指定要回测的板块列表（为空代表全部有效板块，如 ['Black', 'Chemical']）
-    TARGET_SECTORS = ['NonFerrous']
+    TARGET_SECTORS = []
     # 指定要获取计算的参数列表（为空代表默认测试 N_LIST 所有候选，如 [20, 40])
-    TARGET_PARAMS = [20]
+    TARGET_PARAMS = []
     # 指定要计算的信号处理模式（为空代表全部计算，可选：'No zscore', 'zscore', 'State Machine'）
-    TARGET_MODES = ['State Machine']
+    TARGET_MODES = []
     # 评判最优参数的基准模式（决定将什么参数下的品种仓位选入最终投资组合中，当该模式未计算时采用列表第一个计算的模式）
     EVAL_MODE = 'No zscore'
     # 仓位平滑天数（1代表不平滑，大于1代表进行N天滚动平均平滑）

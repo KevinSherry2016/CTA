@@ -152,3 +152,24 @@ OvernightVsIntraday因子
 成交量/持仓量在换月时的处理：
 只在同一合约内计算
 换月日及之后 3~5 天：主力量仓变化因子降权或禁用
+
+结论：
+黑色板块：
+1. 使用均线和动量骨架，比只使用一个框架明显提升
+2. 使用 Vol/OI等并无明显效果
+3. IntradayOvernight相关性0.78，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
+4. BuySellPressure因子相关性0.66，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
+
+
+
+思路：
+同一个策略，短周期和长周期merge
+
+
+注意：
+ATR始终为正
+Amihudquality缺乏流动性指标始终为正
+HistoricalVol始终为正
+IntradayAmplitude
+OpenInterestROC应该要考虑换月
+VolumeMomentum应该要考虑换月

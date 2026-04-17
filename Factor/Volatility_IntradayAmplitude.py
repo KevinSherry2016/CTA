@@ -53,13 +53,7 @@ def main():
 
         # --- 因子计算逻辑 ---
         amp = (high - low) / (open_p + 1e-9)
-        amp_mean_window = amp.rolling(window=N).mean()
-        # Use normalized amplitude deviation so signal can be both positive and negative.
-        baseline_window = 50
-        amp_baseline_mean = amp_mean_window.rolling(window=baseline_window, min_periods=20).mean()
-        amp_baseline_std = amp_mean_window.rolling(window=baseline_window, min_periods=20).std()
-        zscore = (amp_mean_window - amp_baseline_mean) / (amp_baseline_std + 1e-12)
-        signal = (-zscore).clip(-3, 3) / 3
+        signal = amp.rolling(window=N).mean()
         # --------------------
 
         # 填充到position_series (NaN填为0)

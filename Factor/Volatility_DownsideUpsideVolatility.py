@@ -53,9 +53,11 @@ def main():
 
         # --- 因子计算逻辑 ---
         ret = close.pct_change()
-        down_vol = ret.where(ret < 0).rolling(window=N).std()
-        up_vol = ret.where(ret > 0).rolling(window=N).std()
-        signal = (up_vol - down_vol) / (up_vol + down_vol + 1e-9)
+        down_vol = (-ret.where(ret < 0, 0)).rolling(window=N).std()
+        up_vol = (ret.where(ret > 0, 0)).rolling(window=N).std()
+        rs = up_vol / (down_vol + 1e-9)
+        vol_rsi = 100 - (100 / (1 + rs))
+        signal = (vol_rsi - 50) / 100
         # --------------------
 
         # 填充到position_series (NaN填为0)
