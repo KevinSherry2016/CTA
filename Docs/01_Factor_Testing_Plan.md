@@ -8,26 +8,26 @@
 
 | 因子名称 (Factor Name) | 因子类别 | 逻辑简述 | 测试状态 | 评估与相关性计算 |
 | :--- | :--- | :--- | :---: | :---: |
-| `CrossSectional_Kurtosis` | CrossSectional | 截面峰度 | [ ] | [ ] |
-| `CrossSectional_OvernightVsIntraday` | CrossSectional | 隔夜与日内收益率差值 | [ ] | [ ] |
-| `CrossSectional_Skewness` | CrossSectional | 截面偏度 | [ ] | [ ] |
-| `Microstructure_AmihudIlliquidity` | Microstructure | Amihud缺乏流动性指标 | [ ] | [ ] |
-| `Microstructure_BuyingSellingPressure` | Microstructure | 收盘价在日内高低点的位置 | [ ] | [ ] |
-| `TrendMomentum_BollingerBands` | TrendMomentum | 布林带突破 | [ ] | [ ] |
-| `TrendMomentum_DonchianChannel` | TrendMomentum | 唐奇安通道突破 | [ ] | [ ] |
-| `TrendMomentum_DualMACrossover` | TrendMomentum | 双均线交叉 | [ ] | [ ] |
-| `TrendMomentum_MACD` | TrendMomentum | MACD动量 | [ ] | [ ] |
-| `TrendMomentum_MovingAverageBias` | TrendMomentum | 乖离率 | [ ] | [ ] |
-| `TrendMomentum_RSI` | TrendMomentum | 相对强弱指数 | [ ] | [ ] |
-| `TrendMomentum_TimeSeriesMomentum` | TrendMomentum | 时序动量 | [ ] | [ ] |
-| `Volatility_ATR` | Volatility | 真实波动幅度 | [ ] | [ ] |
-| `Volatility_DownsideUpsideVolatility` | Volatility | 上下行波动率倾向 | [ ] | [ ] |
-| `Volatility_HistoricalVolatility` | Volatility | 历史收益率波动率 | [ ] | [ ] |
-| `Volatility_IntradayAmplitude` | Volatility | 日内振幅 | [ ] | [ ] |
-| `Volume_OBV` | Volume | 能量潮指标 | [ ] | [ ] |
-| `Volume_OpenInterestROC` | Volume | 持仓量变化率 (OI) | [ ] | [ ] |
-| `Volume_PriceVolumeCorrelation` | Volume | 量价相关性 | [ ] | [ ] |
-| `Volume_VolumeMomentum` | Volume | 成交量长短期放缩量 | [ ] | [ ] |
+| `CrossSectional_Kurtosis` | CrossSectional | 截面峰度 | [x] | [x] |
+| `CrossSectional_OvernightVsIntraday` | CrossSectional | 隔夜与日内收益率差值 | [x] | [x] |
+| `CrossSectional_Skewness` | CrossSectional | 截面偏度 | [x] | [x] |
+| `Microstructure_AmihudIlliquidity` | Microstructure | Amihud缺乏流动性指标 | [x] | [x] |
+| `Microstructure_BuyingSellingPressure` | Microstructure | 收盘价在日内高低点的位置 | [x] | [x] |
+| `TrendMomentum_BollingerBands` | TrendMomentum | 布林带突破 | [x] | [x] |
+| `TrendMomentum_DonchianChannel` | TrendMomentum | 唐奇安通道突破 | [x] | [x] |
+| `TrendMomentum_DualMACrossover` | TrendMomentum | 双均线交叉 | [x] | [x] |
+| `TrendMomentum_MACD` | TrendMomentum | MACD动量 | [x] | [x] |
+| `TrendMomentum_MovingAverageBias` | TrendMomentum | 乖离率 | [x] | [x] |
+| `TrendMomentum_RSI` | TrendMomentum | 相对强弱指数 | [x] | [x] |
+| `TrendMomentum_TimeSeriesMomentum` | TrendMomentum | 时序动量 | [x] | [x] |
+| `Volatility_ATR` | Volatility | 真实波动幅度 | [x] | [x] |
+| `Volatility_DownsideUpsideVolatility` | Volatility | 上下行波动率倾向 | [x] | [x] |
+| `Volatility_HistoricalVolatility` | Volatility | 历史收益率波动率 | [x] | [x] |
+| `Volatility_IntradayAmplitude` | Volatility | 日内振幅 | [x] | [x] |
+| `Volume_OBV` | Volume | 能量潮指标 | [x] | [x] |
+| `Volume_OpenInterestROC` | Volume | 持仓量变化率 (OI) | [x] | [x] |
+| `Volume_PriceVolumeCorrelation` | Volume | 量价相关性 | [x] | [x] |
+| `Volume_VolumeMomentum` | Volume | 成交量长短期放缩量 | [x] | [x] |
 
 ## 3. 执行工作流 (Workflow)
 

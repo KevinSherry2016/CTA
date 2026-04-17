@@ -39,31 +39,43 @@ def main():
 
     # 参数
     N = 80
-    position_series = {}
+
+    # --- 参数定义 ---
+    PARAM_LIST = [
+        {'fast_n': 6, 'slow_n': 13, 'signal_n': 5},
+        {'fast_n': 8, 'slow_n': 17, 'signal_n': 9},
+        {'fast_n': 12, 'slow_n': 26, 'signal_n': 9},
+        {'fast_n': 19, 'slow_n': 39, 'signal_n': 9},
+        {'fast_n': 24, 'slow_n': 52, 'signal_n': 18}
+    ]
+    # --------------------
 
     print(f"开始计算 TrendMomentum_MACD 因子信号...")
-    for ts_code, df in data.items():
-        # 获取需要的数据列
-        close = df['adj_close']
+    for param in PARAM_LIST:
+        fast_n = param['fast_n']
+        slow_n = param['slow_n']
+        signal_n = param['signal_n']
+        position_series = {}
 
-        # --- 因子计算逻辑 ---
-        span_long = N
-        span_short = max(3, N // 2)
-        span_dea = max(3, N // 4)
-        dif = close.ewm(span=span_short, adjust=False).mean() - close.ewm(span=span_long, adjust=False).mean()
-        dea = dif.ewm(span=span_dea, adjust=False).mean()
-        signal = (dif - dea) * 2
-        # --------------------
+        for ts_code, df in data.items():
+            # 获取需要的数据列
+            close = df['adj_close']
 
-        # 填充到position_series (NaN填为0)
-        position_series[ts_code] = signal
+            # --- 因子计算逻辑 ---
+            dif = close.ewm(span=fast_n, adjust=False).mean() - close.ewm(span=slow_n, adjust=False).mean()
+            dea = dif.ewm(span=signal_n, adjust=False).mean()
+            signal = (dif - dea) * 2
+            # --------------------
 
-    # 4. 合并所有品种信号，输出CSV
-    signals = pd.DataFrame(position_series, index=tradingDayList).fillna(0).astype(float)
-    output_name = f"TrendMomentum_MACD.csv"
-    output_path = os.path.join('./Result', output_name)
-    signals.to_csv(output_path, encoding='utf-8-sig')
-    print(f"因子 TrendMomentum_MACD 输出完成: {output_path}")
+            # 填充到position_series (NaN填为0)
+            position_series[ts_code] = signal
+
+        # 4. 合并所有品种信号，输出CSV
+        signals = pd.DataFrame(position_series, index=tradingDayList).fillna(0).astype(float)
+        output_name = f"TrendMomentum_MACD_{fast_n}_{slow_n}_{signal_n}.csv"
+        output_path = os.path.join('./Result', output_name)
+        signals.to_csv(output_path, encoding='utf-8-sig')
+        print(f"因子 TrendMomentum_MACD 输出完成: {output_path}")
 
 if __name__ == "__main__":
     main()

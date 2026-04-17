@@ -146,3 +146,6 @@ ATR始终为正
 Amihudquality缺乏流动性指标始终为正
 HistoricalVol始终为正
 IntradayAmplitude
+
+
+将raw转换成横截面因子
