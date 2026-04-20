@@ -33,7 +33,10 @@
 
 对于每一个新进入测试管线的因子，执行以下自动化流：
 1. **[Step 1] 开发策略：按照 `02_Implementation_SOP.md` 编写代码。
-2. **[Step 2] 运行与回测**：自动运行生成的 `Strategy.py`，确保生成 `_BacktestResult.csv` 与 `_Position.csv`。
-3. **[Step 3] 汇总表现**：寻找整体参数高原并检验年度 Sharpe 一致性，综合评估过拟合（偏移）风险，挑选出最稳健参数并登记其 Sharpe 和 POT。
-4. **[Step 4] 计算相关性**：按照 `03_Evaluation_Protocol.md` 提取每日收益率（PnL）数据，计算 PnL 相关性矩阵。
-5. **[Step 5] 总结输出**：归档测试报告，并更新本表状态。
+2. **[Step 2] 运行与回测**：自动运行生成的 `Strategy.py`，确保生成 `_BacktestResult.csv`。
+
+## 4. 执行工作流 (统一汇总)
+所有因子都运行完成后，执行以下自动化操作
+1. **[Step 1] 汇总表现**：寻找整体参数高原并检验年度 Sharpe 一致性，综合评估过拟合（偏移）风险，挑选出最稳健参数并登记其 Sharpe 和 POT。
+2. **[Step 2] 计算相关性**：按照 `03_Evaluation_Protocol.md` 提取每日收益率（PnL）数据，计算 PnL 相关性矩阵。
+3. **[Step 3] 总结输出**：归档测试报告，并更新本表状态。
