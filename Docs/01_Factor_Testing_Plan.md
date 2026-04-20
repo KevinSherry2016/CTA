@@ -1,7 +1,7 @@
 ﻿# 因子批量测试与评估计�?(Master Plan)
 
 ## 1. 核心目标
-系统性地开发、回测和评估多个量化因子（宏观、微观、量价等），并分析它们与基础趋势策略之间的相关性。最终目标是遍历所有因子进行测试，找出**具有正向收益预期且相互之间低相关�?*的组合，而不是固定某一基础趋势框架�?
+系统性地开发、回测和评估多个量化因子（宏观、微观、量价等），并分析它们与基础趋势策略之间的相关性。最终目标是遍历所有因子进行测试，找出具有正向收益预期且相互之间低相关性的组合，而不是固定某一基础趋势框架。
 
 ## 2. 待测因子(Factor Pool)
 在进行自动化测试时，将按照下表的因子清单逐一推进。
@@ -9,9 +9,9 @@
 | 因子名称 (Factor Name) | 因子类别 | 逻辑简介| 测试状态| 评估与相关性计算|
 | :--- | :--- | :--- | :---: | :---: |
 | `CrossSectional_Kurtosis` | CrossSectional | 截面峰度 | [ ] | [ ] |
-| `CrossSectional_OvernightVsIntraday` | CrossSectional | 隔夜与日内收益率差�?| [ ] | [ ] |
+| `CrossSectional_OvernightVsIntraday` | CrossSectional | 隔夜与日内收益率差| [ ] | [ ] |
 | `CrossSectional_Skewness` | CrossSectional | 截面偏度 | [ ] | [ ] |
-| `Microstructure_AmihudIlliquidity` | Microstructure | Amihud缺乏流动性指�?| [ ] | [ ] |
+| `Microstructure_AmihudIlliquidity` | Microstructure | Amihud缺乏流动性指标| [ ] | [ ] |
 | `Microstructure_BuyingSellingPressure` | Microstructure | 收盘价在日内高低点的位置 | [ ] | [ ] |
 | `TrendMomentum_BollingerBands` | TrendMomentum | 布林带突破| [ ] | [ ] |
 | `TrendMomentum_DonchianChannel` | TrendMomentum | 唐奇安通道突破 | [ ] | [ ] |
