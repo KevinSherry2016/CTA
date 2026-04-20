@@ -24,7 +24,7 @@
 | `Volatility_DownsideUpsideVolatility` | Volatility | 上下行波动率倾向 | [ ] | [ ] |
 | `Volatility_HistoricalVolatility` | Volatility | 历史收益率波动率 | [ ] | [ ] |
 | `Volatility_IntradayAmplitude` | Volatility | 日内振幅 | [ ] | [ ] |
-| `Volume_OBV` | Volume | 能量潮指�?| [ ] | [ ] |
+| `Volume_OBV` | Volume | 能量潮指| [ ] | [ ] |
 | `Volume_OpenInterestROC` | Volume | 持仓量变化率 (OI) | [ ] | [ ] |
 | `Volume_PriceVolumeCorrelation` | Volume | 量价相关性| [ ] | [ ] |
 | `Volume_VolumeMomentum` | Volume | 成交量长短期放缩| [ ] | [ ] |
@@ -32,10 +32,10 @@
 ## 3. 执行工作(Workflow)
 对于每一个新进入测试管线的因子，执行以下自动化流
 1. **[Step 1] 开发策略：按照 `02_Implementation_SOP.md` 编写代码
-2. **[Step 2] 运行与回�?*：自动运行生成的 `Strategy.py`，确保生成`_BacktestResult.csv`
+2. **[Step 2] 运行与回测*：自动运行生成的 `Strategy.py`，生成一个`_BacktestResult.csv`，
 
 ## 4. 统一汇总
-所有因子都运行完成后，执行以下自动化操作
-1. **[Step 1] 汇总表格：寻找整体参数高原并检验年�?Sharpe 一致性，综合评估过拟合（偏移）风险，挑选出最稳健参数并登记其 Sharpe 和 POT
-2. **[Step 2] 计算相关性：按照`03_Evaluation_Protocol.md` 提取每日收益率（PnL）数据，计算 PnL 相关性矩阵
+所有因子都运行完成后，按照`03_Evaluation_Protocol.md`执行以下自动化操作
+1. **[Step 1] 汇总表格：寻找整体参数高原并检验年化Sharpe 一致性，综合评估过拟合（偏移）风险，挑选出最稳健参数并登记其 Sharpe 和 POT
+2. **[Step 2] 计算相关性：提取每日盈亏（PnL）数据，计算 PnL 相关性矩阵
 3. **[Step 3] 总结输出：归档测试报告，并更新本表状态

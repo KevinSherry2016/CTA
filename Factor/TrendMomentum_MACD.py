@@ -37,9 +37,6 @@ def main():
                 tradingDayList = df.index.tolist()
             data[ts_code] = df
 
-    # 参数
-    N = 80
-
     # --- 参数定义 ---
     PARAM_LIST = [
         {'fast_n': 6, 'slow_n': 13, 'signal_n': 5},
