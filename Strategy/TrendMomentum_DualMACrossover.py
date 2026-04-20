@@ -1,14 +1,13 @@
-# ==============================================================================
-# 策略类型：趋势策略
+﻿# ==============================================================================
+# 策略类型：Unknown
 # 策略名称：TrendMomentum_DualMACrossover
-# 代表意义：仅使用双均线因子，判断趋势大方向。结果映射到状态机[-1, 0, 1]
+# 代表意义：Unknown
 # 适用板块：Ferrous
 # ==============================================================================
 
 import pandas as pd
 import numpy as np
 import os
-import itertools
 
 def main():
     # 兼容在不同目录层级运行
@@ -29,7 +28,7 @@ def main():
 
     # 2. 提取日度行情数据
     data = {}
-    print("正在加载数据...")
+    print(f"正在加载 {__file__} 数据...")
     tradingDayList = []
     
     for ts_code in valid_info['ts_code']:
@@ -44,9 +43,8 @@ def main():
                     df[col] = pd.to_numeric(df[col], errors='coerce')
             data[ts_code] = df
 
-    # 参数列表 
-    FAST_MA_LIST = [5, 10, 20]
-    SLOW_MA_LIST = [20, 40, 60]
+    N_LIST = [20, 30, 40, 50, 60, 70]
+
     
     POSITION_SMOOTH_DAYS = 10
 
@@ -56,6 +54,8 @@ def main():
     for FACTOR_MODE in ['RAW', 'STATE_MACHINE']:
         best_positions = {}
 
+        sector_best_pos = {}
+        
         for sector, ts_codes in sector_map.items():
             if pd.isna(sector) or str(sector).lower() in EXCLUDE_SECTORS: continue
             if TARGET_SECTORS and sector not in TARGET_SECTORS: continue
@@ -64,14 +64,9 @@ def main():
             if not valid_symbols: continue
 
             max_metric = -999
-            sector_best_pos = {}
             
-            param_combinations = list(itertools.product(FAST_MA_LIST, SLOW_MA_LIST))
-            
-            for fast_ma, slow_ma in param_combinations:
-                if fast_ma >= slow_ma:
-                    continue
-                    
+            for N in N_LIST:
+
                 pnl_sm = []
                 turnover_sm = []
                 temp_pos_sm = {}
@@ -79,20 +74,21 @@ def main():
                 for ts_code in valid_symbols:
                     df = data[ts_code]
                     close = df['adj_close']
+                    open_p = df['adj_open']
+                    high = df['adj_high']
+                    low = df['adj_low']
+                    volume = df.get('vol', df.get('Volume', pd.Series(dtype=float)))
+                    oi = df.get('oi', pd.Series(dtype=float))
                     daily_ret = close.pct_change(fill_method=None)
-                    vol = daily_ret.rolling(FINAL_VOL_WINDOW, min_periods=1).std().replace(0, np.nan)
+                    vol_series = daily_ret.rolling(FINAL_VOL_WINDOW, min_periods=1).std().replace(0, np.nan)
 
-                    # --- 因子计算逻辑 ---
-                    # 主趋势：双均线 
-                    ma_fast = close.rolling(fast_ma).mean()
-                    ma_slow = close.rolling(slow_ma).mean()
-                    
-                    raw_sig = (ma_fast - ma_slow) / ma_slow.replace(0, np.nan)
+                    short_ma = close.rolling(window=fast_n).mean()
+                    long_ma = close.rolling(window=slow_n).mean()
+                    raw_sig = (short_ma / long_ma - 1).apply(lambda x: np.sign(x) if pd.notna(x) else np.nan)
 
                     if FACTOR_MODE == 'RAW':
                         # RAW模式：直接使用相对连续值
                         states = raw_sig.copy().fillna(0)
-                        # 为了避免极值影响，可以进行简单截断或标准化处理，这里保留原始值
                     else:
                         # 状态机映射 [-1, 0, 1]
                         states = pd.Series(0.0, index=close.index)
@@ -100,26 +96,36 @@ def main():
                         states[raw_sig < 0] = -1.0
                     
                     # 目标仓位等于状态值除以波动率
-                    pos_sm = states / vol
+                    pos_sm = states / vol_series
                     if POSITION_SMOOTH_DAYS > 1:
                         pos_sm = pos_sm.ewm(span=POSITION_SMOOTH_DAYS, adjust=False).mean()
                     
                     temp_pos_sm[ts_code] = pos_sm
-                    pnl_sm.append(pos_sm.shift(1) * daily_ret)
+                    
+                    # PnL Calculation
+                    position_yesterday = pos_sm.shift(1).fillna(0)
+                    pnl_sm.append(position_yesterday * daily_ret.fillna(0))
+                    
+                    # Turnover Calculation
                     turnover_sm.append(pos_sm.diff().abs().fillna(0))
 
                 if pnl_sm:
-                    df_sm = pd.concat(pnl_sm, axis=1).sum(axis=1)
+                    df_sm = pd.concat(pnl_sm, axis=1).sum(axis=1) # Daily PnL
                     sharpe = df_sm.mean() / df_sm.std() * np.sqrt(252) if df_sm.std() > 0 else 0
                     
-                    tv_sm = pd.concat(turnover_sm, axis=1).sum(axis=1)
-                    pot = df_sm.sum() / tv_sm.sum() * 10000 if tv_sm.sum() > 0 else 0
+                    pot = 0
+                    if turnover_sm:
+                        tv_series = pd.concat(turnover_sm, axis=1).sum(axis=1)
+                        total_turnover = tv_series.sum()
+                        total_pnl_sm = df_sm.sum()
+                        if total_turnover > 0:
+                            pot = total_pnl_sm / total_turnover * 10000
 
                     record = {
                         'Mode': FACTOR_MODE,
                         'Sector': sector,
-                        'FastMA': fast_ma,
-                        'SlowMA': slow_ma,
+                        'N': N,
+
                         'Sharpe': round(sharpe, 4),
                         'POT': round(pot, 4)
                     }
@@ -138,16 +144,21 @@ def main():
 
         if best_positions:
             df_pos_sm = pd.DataFrame(best_positions, index=tradingDayList).fillna(0)
-            pos_path = os.path.join(output_dir, f"TrendMomentum_DualMACrossover_{FACTOR_MODE}_Position_Ferrous.csv")
+            df_pos_sm = df_pos_sm.reindex(tradingDayList) # Ensure index order
+            pos_path = os.path.join(output_dir, f"TrendMomentum_DualMACrossover_{FACTOR_MODE}_Ferrous_Position.csv")
             df_pos_sm.to_csv(pos_path, encoding='utf-8-sig')
-            print(f"{FACTOR_MODE} 模式最优仓位文件已保存至: {pos_path}")
 
     # -------- 数据保存与输出（回测结果） --------
     if results:
         res_df = pd.DataFrame(results)
-        report_path = os.path.join(output_dir, "TrendMomentum_DualMACrossover_Ferrous_BacktestResult.csv")
-        res_df.to_csv(report_path, encoding='utf-8-sig', index=False)
-        print(f"合并的两种模式回测结果报表已保存至: {report_path}")
+        raw_res = res_df[res_df['Mode'] == 'RAW'].copy()
+        state_res = res_df[res_df['Mode'] == 'STATE_MACHINE'].copy()
+
+        raw_path = os.path.join(output_dir, f"TrendMomentum_DualMACrossover_RAW_Ferrous_BacktestResult.csv")
+        state_path = os.path.join(output_dir, f"TrendMomentum_DualMACrossover_STATE_MACHINE_Ferrous_BacktestResult.csv")
+        
+        raw_res.to_csv(raw_path, encoding='utf-8-sig', index=False)
+        state_res.to_csv(state_path, encoding='utf-8-sig', index=False)
 
 if __name__ == "__main__":
     main()

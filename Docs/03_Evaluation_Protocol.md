@@ -2,7 +2,7 @@
 
 ## 1. 自动化扫描收集
 开发一个汇总性评估脚本 `Evaluate_All_Factors.py`，要求具备如下功能：
-- 扫描 `./Result` 目录下所有的 `*BacktestResult.csv` 与 `*Position.csv` 文件。
+- 扫描 `./Result` 目录下所有的 `*BacktestResult.csv` 文件。
 
 ## 2. 稳健参数评估与表现汇总 (Robust Performance Matrix)
 不再单纯提取“Max Sharpe”（容易陷入参数孤岛），而是必须执行以下两步校验来评估参数偏移/过拟合问题，选出最稳健参数：
