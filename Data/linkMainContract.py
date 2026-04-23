@@ -17,36 +17,37 @@ def process_main_contract():
         file_path = os.path.join(main_dir, f)
 
         print(f'正在处理 {ts_code}...')
-        df = pd.read_csv(file_path, dtype={'ts_code': str, 'trade_date': str})
-
-        # 跳过已处理的品种
-        if 'adj_close' in df.columns:
-            print(f'  {ts_code} 已处理，跳过')
-            continue
+        df = pd.read_csv(file_path, dtype={'ts_code': str, 'mapping_ts_code': str, 'trade_date': str})
 
         df.sort_values(by='trade_date', inplace=True)
         df.reset_index(drop=True, inplace=True)
 
-        # 获取换月时前主力合约的收盘价
-        df['pre_main_close'] = pd.NA
-        for i in range(1, len(df)):
-            prev_ts_code = df.loc[i - 1, 'ts_code']
-            curr_ts_code = df.loc[i, 'ts_code']
+        contract_col = 'mapping_ts_code' if 'mapping_ts_code' in df.columns else 'ts_code'
 
-            if prev_ts_code != curr_ts_code:
-                trading_day = df.loc[i, 'trade_date']
-                print(f'  {trading_day} 换月: {prev_ts_code} -> {curr_ts_code}，查询 {prev_ts_code} 当日收盘价...')
-                try:
-                    temp = pro.fut_daily(ts_code=prev_ts_code, start_date=trading_day, end_date=trading_day)
-                    if temp is not None and not temp.empty:
-                        close = temp.loc[0, 'close']
-                        df.loc[i, 'pre_main_close'] = close
-                        print(f'    pre_main_close = {close}')
-                    else:
-                        print(f'    *** 未查到 {prev_ts_code} 在 {trading_day} 的数据 ***')
-                except Exception as e:
-                    print(f'    *** 查询失败: {e} ***')
-                time.sleep(3)
+        if 'pre_main_close' not in df.columns:
+            df['pre_main_close'] = pd.NA
+
+        # 获取换月时前主力合约的收盘价
+        for i in range(1, len(df)):
+            prev_contract = df.loc[i - 1, contract_col]
+            curr_contract = df.loc[i, contract_col]
+
+            if prev_contract != curr_contract:
+                # 只有在尚未获取该日数据时才调取 API
+                if pd.isna(df.loc[i, 'pre_main_close']):
+                    trading_day = df.loc[i, 'trade_date']
+                    print(f'  {trading_day} 换月: {prev_contract} -> {curr_contract}，查询 {prev_contract} 当日收盘价...')
+                    try:
+                        temp = pro.fut_daily(ts_code=prev_contract, start_date=trading_day, end_date=trading_day)
+                        if temp is not None and not temp.empty:
+                            close = temp.loc[0, 'close']
+                            df.loc[i, 'pre_main_close'] = close
+                            print(f'    pre_main_close = {close}')
+                        else:
+                            print(f'    *** 未查到 {prev_contract} 在 {trading_day} 的数据 ***')
+                    except Exception as e:
+                        print(f'    *** 查询失败: {e} ***')
+                    time.sleep(3)
 
         # 计算复权因子和复权价格
         print(f'  正在计算 {ts_code} 的复权因子...')
@@ -66,27 +67,5 @@ def process_main_contract():
         print(f'  {ts_code} 已保存至 {file_path}，共 {len(df)} 条')
 
 
-def rename_ts_code():
-    """将ts_code列改为文件名，原ts_code重命名为mapping_ts_code"""
-    files = sorted([f for f in os.listdir(main_dir) if f.endswith('.csv')])
-
-    for f in files:
-        symbol = f.replace('.csv', '')
-        file_path = os.path.join(main_dir, f)
-
-        df = pd.read_csv(file_path, dtype={'ts_code': str, 'trade_date': str})
-
-        if 'mapping_ts_code' in df.columns:
-            print(f'  {symbol} 已处理，跳过')
-            continue
-
-        df.rename(columns={'ts_code': 'mapping_ts_code'}, inplace=True)
-        df.insert(0, 'ts_code', symbol)
-
-        df.to_csv(file_path, index=False)
-        print(f'{symbol} 已完成，ts_code={symbol}，原ts_code已重命名为mapping_ts_code')
-
-
 if __name__ == '__main__':
-    # process_main_contract()
-    rename_ts_code()
+    process_main_contract()

@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+NoiseFader,{'N': 10},RAW,-0.7534,-23.8491
+NoiseFader,{'N': 10},STATE_MACHINE,-0.917,-41.3357
+NoiseFader,{'N': 20},RAW,-0.9122,-46.3227
+NoiseFader,{'N': 20},STATE_MACHINE,-0.9808,-63.0388
+NoiseFader,{'N': 30},RAW,-0.8681,-52.8753
+NoiseFader,{'N': 30},STATE_MACHINE,-0.8925,-65.4822
+NoiseFader,{'N': 40},RAW,-0.7908,-54.3792
+NoiseFader,{'N': 40},STATE_MACHINE,-0.8245,-66.4489
+NoiseFader,{'N': 50},RAW,-0.8316,-62.6905
+NoiseFader,{'N': 50},STATE_MACHINE,-0.8402,-72.6829
+NoiseFader,{'N': 60},RAW,-0.8412,-71.2144
+NoiseFader,{'N': 60},STATE_MACHINE,-0.833,-79.1713

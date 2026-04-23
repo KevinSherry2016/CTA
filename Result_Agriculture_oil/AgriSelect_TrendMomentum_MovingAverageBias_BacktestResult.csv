@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+MovingAverageBias,{'N': 10},RAW,0.2335,7.9616
+MovingAverageBias,{'N': 10},STATE_MACHINE,0.3527,7.8095
+MovingAverageBias,{'N': 20},RAW,0.2773,13.426
+MovingAverageBias,{'N': 20},STATE_MACHINE,0.2755,8.8509
+MovingAverageBias,{'N': 30},RAW,0.2294,13.4515
+MovingAverageBias,{'N': 30},STATE_MACHINE,0.2576,10.0295
+MovingAverageBias,{'N': 40},RAW,0.2757,18.7098
+MovingAverageBias,{'N': 40},STATE_MACHINE,0.3428,15.4526
+MovingAverageBias,{'N': 50},RAW,0.3121,23.4486
+MovingAverageBias,{'N': 50},STATE_MACHINE,0.312,15.3939
+MovingAverageBias,{'N': 60},RAW,0.3071,24.8714
+MovingAverageBias,{'N': 60},STATE_MACHINE,0.212,10.7923

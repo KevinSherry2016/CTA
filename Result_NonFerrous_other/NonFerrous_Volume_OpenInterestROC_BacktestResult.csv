@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+OpenInterestROC,{'N': 10},RAW,-0.2257,-6.067
+OpenInterestROC,{'N': 10},STATE_MACHINE,-0.3156,-6.9961
+OpenInterestROC,{'N': 20},RAW,-0.2049,-9.4344
+OpenInterestROC,{'N': 20},STATE_MACHINE,-0.264,-9.3853
+OpenInterestROC,{'N': 30},RAW,-0.5426,-28.9288
+OpenInterestROC,{'N': 30},STATE_MACHINE,-0.5721,-24.8165
+OpenInterestROC,{'N': 40},RAW,-0.5696,-40.462
+OpenInterestROC,{'N': 40},STATE_MACHINE,-0.6341,-31.0644
+OpenInterestROC,{'N': 50},RAW,0.3146,17.3685
+OpenInterestROC,{'N': 50},STATE_MACHINE,-0.1565,-6.6771
+OpenInterestROC,{'N': 60},RAW,0.2403,12.8337
+OpenInterestROC,{'N': 60},STATE_MACHINE,-0.3319,-15.0083

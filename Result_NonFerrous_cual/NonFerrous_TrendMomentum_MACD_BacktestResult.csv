@@ -1,0 +1,11 @@
+Factor,Parameters,Mode,SharpRatio,POT
+MACD,"{'fast_n': 6, 'slow_n': 13, 'signal_n': 5}",RAW,0.1673,5.0886
+MACD,"{'fast_n': 6, 'slow_n': 13, 'signal_n': 5}",STATE_MACHINE,0.1981,2.8053
+MACD,"{'fast_n': 8, 'slow_n': 17, 'signal_n': 9}",RAW,0.178,6.2098
+MACD,"{'fast_n': 8, 'slow_n': 17, 'signal_n': 9}",STATE_MACHINE,0.4958,8.9606
+MACD,"{'fast_n': 12, 'slow_n': 26, 'signal_n': 9}",RAW,0.2172,8.2061
+MACD,"{'fast_n': 12, 'slow_n': 26, 'signal_n': 9}",STATE_MACHINE,0.6681,13.9377
+MACD,"{'fast_n': 19, 'slow_n': 39, 'signal_n': 9}",RAW,0.3062,12.921
+MACD,"{'fast_n': 19, 'slow_n': 39, 'signal_n': 9}",STATE_MACHINE,0.9245,23.2847
+MACD,"{'fast_n': 24, 'slow_n': 52, 'signal_n': 18}",RAW,0.3783,19.1516
+MACD,"{'fast_n': 24, 'slow_n': 52, 'signal_n': 18}",STATE_MACHINE,0.9623,28.7344

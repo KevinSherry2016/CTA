@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+DonchianChannel,{'N': 10},RAW,0.2706,5.8581
+DonchianChannel,{'N': 10},STATE_MACHINE,0.2883,5.4074
+DonchianChannel,{'N': 20},RAW,0.3423,9.675
+DonchianChannel,{'N': 20},STATE_MACHINE,0.345,8.7829
+DonchianChannel,{'N': 30},RAW,0.4094,13.1486
+DonchianChannel,{'N': 30},STATE_MACHINE,0.4573,13.2563
+DonchianChannel,{'N': 40},RAW,0.5383,18.9406
+DonchianChannel,{'N': 40},STATE_MACHINE,0.5658,17.855
+DonchianChannel,{'N': 50},RAW,0.587,21.8752
+DonchianChannel,{'N': 50},STATE_MACHINE,0.5626,18.1579
+DonchianChannel,{'N': 60},RAW,0.5634,21.7249
+DonchianChannel,{'N': 60},STATE_MACHINE,0.4836,15.7675

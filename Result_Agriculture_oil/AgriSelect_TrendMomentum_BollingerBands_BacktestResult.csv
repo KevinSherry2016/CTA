@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+BollingerBands,{'N': 10},RAW,0.134,2.6831
+BollingerBands,{'N': 10},STATE_MACHINE,0.134,2.6831
+BollingerBands,{'N': 20},RAW,0.4587,12.4252
+BollingerBands,{'N': 20},STATE_MACHINE,0.4587,12.4252
+BollingerBands,{'N': 30},RAW,0.2983,9.1868
+BollingerBands,{'N': 30},STATE_MACHINE,0.2983,9.1868
+BollingerBands,{'N': 40},RAW,0.3496,13.1736
+BollingerBands,{'N': 40},STATE_MACHINE,0.3496,13.1736
+BollingerBands,{'N': 50},RAW,0.3526,14.895
+BollingerBands,{'N': 50},STATE_MACHINE,0.3526,14.895
+BollingerBands,{'N': 60},RAW,0.4341,20.7699
+BollingerBands,{'N': 60},STATE_MACHINE,0.4341,20.7699

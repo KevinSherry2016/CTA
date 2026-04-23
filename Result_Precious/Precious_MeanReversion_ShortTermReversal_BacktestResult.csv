@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+ShortTermReversal,{'N': 10},RAW,-0.2082,-14.7126
+ShortTermReversal,{'N': 10},STATE_MACHINE,-0.5395,-17.5041
+ShortTermReversal,{'N': 20},RAW,-0.2288,-22.8626
+ShortTermReversal,{'N': 20},STATE_MACHINE,-0.4279,-18.6829
+ShortTermReversal,{'N': 30},RAW,-0.3856,-48.7821
+ShortTermReversal,{'N': 30},STATE_MACHINE,-0.8049,-43.0338
+ShortTermReversal,{'N': 40},RAW,-0.3763,-54.37
+ShortTermReversal,{'N': 40},STATE_MACHINE,-0.6778,-39.0872
+ShortTermReversal,{'N': 50},RAW,-0.3619,-56.5357
+ShortTermReversal,{'N': 50},STATE_MACHINE,-0.6363,-40.9804
+ShortTermReversal,{'N': 60},RAW,-0.2722,-44.9855
+ShortTermReversal,{'N': 60},STATE_MACHINE,-0.5171,-35.1761

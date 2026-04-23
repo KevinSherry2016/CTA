@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+Skewness,{'N': 10},RAW,0.2008,3.82
+Skewness,{'N': 10},STATE_MACHINE,0.1456,2.2784
+Skewness,{'N': 20},RAW,0.4476,12.8001
+Skewness,{'N': 20},STATE_MACHINE,0.3006,6.7574
+Skewness,{'N': 30},RAW,0.4443,15.5985
+Skewness,{'N': 30},STATE_MACHINE,0.3689,9.1367
+Skewness,{'N': 40},RAW,0.3622,14.2402
+Skewness,{'N': 40},STATE_MACHINE,0.2913,8.0055
+Skewness,{'N': 50},RAW,0.2201,9.6748
+Skewness,{'N': 50},STATE_MACHINE,0.1634,4.9765
+Skewness,{'N': 60},RAW,0.1235,5.7378
+Skewness,{'N': 60},STATE_MACHINE,0.0621,1.9138

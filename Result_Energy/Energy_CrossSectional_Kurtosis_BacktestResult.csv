@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+Kurtosis,{'N': 10},RAW,-0.3745,-7.3697
+Kurtosis,{'N': 10},STATE_MACHINE,-0.4167,-6.3944
+Kurtosis,{'N': 20},RAW,0.2821,67.0806
+Kurtosis,{'N': 20},STATE_MACHINE,0.0557,1.6503
+Kurtosis,{'N': 30},RAW,0.3583,124.5915
+Kurtosis,{'N': 30},STATE_MACHINE,0.3507,14.4138
+Kurtosis,{'N': 40},RAW,0.3983,110.0968
+Kurtosis,{'N': 40},STATE_MACHINE,0.3279,16.3666
+Kurtosis,{'N': 50},RAW,0.3373,132.2734
+Kurtosis,{'N': 50},STATE_MACHINE,0.3305,19.563
+Kurtosis,{'N': 60},RAW,0.2977,212.1675
+Kurtosis,{'N': 60},STATE_MACHINE,0.2982,20.0006

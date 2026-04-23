@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+IntradayAmplitude,{'N': 10},RAW,0.4605,89.6101
+IntradayAmplitude,{'N': 10},STATE_MACHINE,0.4766,68.3194
+IntradayAmplitude,{'N': 20},RAW,0.4558,101.9025
+IntradayAmplitude,{'N': 20},STATE_MACHINE,0.4778,68.4278
+IntradayAmplitude,{'N': 30},RAW,0.432,87.518
+IntradayAmplitude,{'N': 30},STATE_MACHINE,0.479,68.5447
+IntradayAmplitude,{'N': 40},RAW,0.426,83.6333
+IntradayAmplitude,{'N': 40},STATE_MACHINE,0.4777,68.3468
+IntradayAmplitude,{'N': 50},RAW,0.4334,83.4591
+IntradayAmplitude,{'N': 50},STATE_MACHINE,0.4797,68.7799
+IntradayAmplitude,{'N': 60},RAW,0.4272,80.57
+IntradayAmplitude,{'N': 60},STATE_MACHINE,0.4713,67.7503

@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+TimeSeriesMomentum,{'N': 10},RAW,0.0213,0.8354
+TimeSeriesMomentum,{'N': 10},STATE_MACHINE,0.3216,7.0574
+TimeSeriesMomentum,{'N': 20},RAW,0.1808,8.9537
+TimeSeriesMomentum,{'N': 20},STATE_MACHINE,0.4399,12.2605
+TimeSeriesMomentum,{'N': 30},RAW,0.4072,22.9524
+TimeSeriesMomentum,{'N': 30},STATE_MACHINE,0.6715,21.073
+TimeSeriesMomentum,{'N': 40},RAW,0.4674,28.8746
+TimeSeriesMomentum,{'N': 40},STATE_MACHINE,0.611,19.8488
+TimeSeriesMomentum,{'N': 50},RAW,0.4188,26.3765
+TimeSeriesMomentum,{'N': 50},STATE_MACHINE,0.6115,20.6145
+TimeSeriesMomentum,{'N': 60},RAW,0.3069,19.5874
+TimeSeriesMomentum,{'N': 60},STATE_MACHINE,0.4227,14.3384

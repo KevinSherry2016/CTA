@@ -3,22 +3,31 @@ from pathlib import Path
 import pandas as pd
 
 
-RESULT_DIR = Path('./Result')
+RESULT_DIR = Path('./Evaluate')
 
 # 若指定 INPUT_FILES，则优先使用该列表；否则使用 INPUT_GLOB 自动收集。
 INPUT_FILES = [
-    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Precious_N20_Smooth10_position_normalized.csv',
-    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_NonFerrous_N20_Smooth10_position_normalized.csv',
-    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Ferrous_N20_Smooth10_position_normalized.csv',
-    './Result/CrossSectional_OvernightVsIntraday_StateMachine_Position_Energy_N40_Smooth10_position_normalized.csv',
-    './Result/CrossSectional_OvernightVsIntraday_NoZscore_Position_Agriculture_N50_Smooth10_position_normalized.csv',
+    # './Evaluate/Ferrous_CrossSectional_OvernightVsIntraday_N20_STATE_MACHINE_Position_Position_normalized.csv',
+    # './Evaluate/Ferrous_TrendMomentum_MovingAverageBias_N30_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/Ferrous_Volume_VolumeMomentum_N50_RAW_Position_position_normalized.csv',
+    # './Evaluate/NonFerrous_TrendMomentum_MACD_fast_n24,slow_n52,signal_n18_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/NonFerrous_TrendMomentum_MovingAverageBias_N40_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/NonFerrous_TrendMomentum_DualMACrossover_fast_n20,slow_n60_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/NonFerrous_Microstructure_BuyingSellingPressure_N30_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/Energy_TrendMomentum_MovingAverageBias_N40_STATE_MACHINE_Position_position_normalized.csv',
+    # './Evaluate/Energy_Volume_CMF_N40_RAW_Position_position_normalized.csv',
+    './Evaluate/Precious_Microstructure_BuyingSellingPressure_N40_STATE_MACHINE_Position_position_normalized.csv',
+    './Evaluate/Precious_TrendMomentum_DualMACrossover_fast_n20,slow_n40_STATE_MACHINE_Position_position_normalized.csv',
+    './Evaluate/Precious_TrendMomentum_DualMACrossover_fast_n20,slow_n60_STATE_MACHINE_Position_position_normalized.csv',
 ]   
 INPUT_GLOB = '*_position_normalized.csv'
 
 # 可选权重。未出现在该字典中的文件默认权重为 1.0。
 # key 使用文件名（不含路径）更稳妥。
 FILE_WEIGHTS = {
-    # 'xxx_position_normalized.csv': 1.0,
+    # 'Ferrous_CrossSectional_OvernightVsIntraday_N20_STATE_MACHINE_Position_Position_normalized.csv': 0.4,
+    # 'Ferrous_TrendMomentum_MovingAverageBias_N30_STATE_MACHINE_Position_position_normalized.csv': 0.4,
+    # 'Ferrous_Volume_VolumeMomentum_N50_RAW_Position_position_normalized.csv': 0.2,
 }
 
 # 合并模式：

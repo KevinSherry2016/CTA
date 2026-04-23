@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 pro = ts.pro_api('d5de2aa0de5bf28ad29b96416062e16d894b864c6aa6d526de10e35c')
 
-def fetch_all_daily(start_date='20100104', end_date='20260404', save_dir='daily_data'):
+def fetch_all_daily(start_date='20260420', end_date=datetime.now().strftime('%Y%m%d'), save_dir='daily_data'):
     """遍历每一天（含非交易日），通过fut_daily获取全部日线行情数据"""
     os.makedirs(save_dir, exist_ok=True)
 

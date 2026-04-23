@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+HistoricalVolatility,{'N': 10},RAW,0.3747,50.1457
+HistoricalVolatility,{'N': 10},STATE_MACHINE,0.2993,43.4307
+HistoricalVolatility,{'N': 20},RAW,0.4028,103.6154
+HistoricalVolatility,{'N': 20},STATE_MACHINE,0.305,44.2417
+HistoricalVolatility,{'N': 30},RAW,0.3858,65.9272
+HistoricalVolatility,{'N': 30},STATE_MACHINE,0.2949,42.8321
+HistoricalVolatility,{'N': 40},RAW,0.3887,65.3587
+HistoricalVolatility,{'N': 40},STATE_MACHINE,0.2976,43.1913
+HistoricalVolatility,{'N': 50},RAW,0.3801,63.6039
+HistoricalVolatility,{'N': 50},STATE_MACHINE,0.2991,43.6096
+HistoricalVolatility,{'N': 60},RAW,0.3874,64.5767
+HistoricalVolatility,{'N': 60},STATE_MACHINE,0.2992,43.7381

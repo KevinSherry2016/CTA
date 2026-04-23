@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+PriceOiDivergence,{'N': 10},RAW,-0.0423,-1.2097
+PriceOiDivergence,{'N': 10},STATE_MACHINE,-0.1354,-2.5969
+PriceOiDivergence,{'N': 20},RAW,-0.0715,-3.1274
+PriceOiDivergence,{'N': 20},STATE_MACHINE,-0.3522,-11.062
+PriceOiDivergence,{'N': 30},RAW,-0.0728,-4.1403
+PriceOiDivergence,{'N': 30},STATE_MACHINE,0.0616,2.4474
+PriceOiDivergence,{'N': 40},RAW,-0.4061,-20.6011
+PriceOiDivergence,{'N': 40},STATE_MACHINE,-0.0267,-0.9653
+PriceOiDivergence,{'N': 50},RAW,-0.4793,-27.296
+PriceOiDivergence,{'N': 50},STATE_MACHINE,-0.4625,-25.7763
+PriceOiDivergence,{'N': 60},RAW,0.0,0.0
+PriceOiDivergence,{'N': 60},STATE_MACHINE,0.0,0.0

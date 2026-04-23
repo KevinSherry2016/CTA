@@ -1,3 +1,8 @@
+行情数据
+fetchDailyData -> 获取每日行情数据
+
+
+
 因子库：
 动量与趋势类因子（Trend & Momentum）
 1. 收益率因子：
@@ -39,32 +44,21 @@ rsi = 100 - (100/(1 + rs))，范围在[0,100]之间
 tr = max(high-low, abs(high - preclose), abs(low - preclose)).max
 atr = tr/close.rolling().mean()
 atr_ratio = atr / close.replace(0, np.nan)
-atr_ratio_mean = atr_ratio.rolling(window=baseline_window, min_periods=20).mean()
-atr_ratio_std = atr_ratio.rolling(window=baseline_window, min_periods=20).std()
-zscore = (atr_ratio - atr_ratio_mean) / (atr_ratio_std + 1e-12)
-因子值 = (-zscore).clip(-3, 3) / 3
 
 
 2. 历史收益率波动率
 ret = close.pct_change()
 hv = ret.rolling().std()
-baseline_window = 50
-hv_mean = hv.rolling(window=baseline_window, min_periods=20).mean()
-hv_std = hv.rolling(window=baseline_window, min_periods=20).std()
-zscore = (hv - hv_mean) / (hv_std + 1e-12)
-因子值 = (-zscore).clip(-3, 3) / 3
 
 3. 日内振幅
 amp = (high - low)/open或者(high - low)/close(t-1)
-amp_mean_window = amp.rolling(window=N).mean()
-baseline_window = 50
-amp_baseline_mean = amp_mean_window.rolling(window=baseline_window, min_periods=20).mean()
-amp_baseline_std = amp_mean_window.rolling(window=baseline_window, min_periods=20).std()
-zscore = (amp_mean_window - amp_baseline_mean) / (amp_baseline_std + 1e-12)
-signal = (-zscore).clip(-3, 3) / 3
 
 4. 上下行波动率倾向
 因子 = (上涨收益率的波动 - 下跌收益率的波动) / (上涨收益率 + 下跌收益率波动)
+
+5. VIXFix
+highest_close = close.rolling(window=N, min_periods=1).max()
+因子值 = (highest_close - low) / (highest_close + 1e-8) * 100
 
 成交量与持仓量类因子（Volume & Open Interest）
 1. 成交量/持仓量动量
@@ -84,6 +78,14 @@ obv = (direction * volume).cumsum()
 
 4. 持仓量变化率
 因子值 = oi / oi.shift(N) - 1
+
+5. 价格持仓量分离
+因子值 = - return * sign(oi/oi.rolling(window = N).mean - 1)
+
+6. 蔡金资金流量指标(CMF)
+Money Flow Multiplier = ((close -low) - (high - low))/ high - close
+money_flow_volume = Money Flow Multiplier * volume
+cmf = money_flow_volume.rolling(window=N, min_periods=1).sum() / (volume.rolling(window=N, min_periods=1).sum() + 1e-8) 
 
 截面与非对称性因子（Cross-sectional & Asymmetry）
 1. 收益率偏度
@@ -109,43 +111,38 @@ OvernightRet： open / close(t-1) - 1
 因子值 = (((close - low) / (high - low))-0.5)*2
 
 
-没有明显涨跌意义，仅适合做过滤：
-波动率与风险类因子（Volatility & Risk）中 1,2,3
-成交量与持仓量类因子（Volume & Open Interest）中 1,4
-截面与非对称性因子（Cross-sectional & Asymmetry）中 1，2
-微观结构演化中1
+均值回归
+1. 短期回转
+因子值 = - N天return
 
-
-量价关系很典型：
-放量上涨 + 持仓增加 -> 趋势强化
-放量下跌 + 持仓增加 -> 空头趋势强化
-
-黑色系
-能源化工
-贵金属
-核心有色（铜、铝）
-部分农产品（油脂油料、白糖、棉花）
-
-核心思路：
-用动量/均线做方向骨架，用成交量/持仓量做趋势确认，用波动率因子做环境识别和风险缩放，用微观因子做入场择时和持仓微调，再通过板块约束实现组合层面的稳定化。
-
-结论：
-黑色板块：
-1. 使用均线和动量骨架，比只使用一个框架明显提升
-2. 使用 Vol/OI等并无明显效果
-3. IntradayOvernight相关性0.78，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
-4. BuySellPressure因子相关性0.66，在框架下增加了IntradayOvernight因子，sharp和pot都得到了一定提升
-
-
-思路：
-同一个策略，短周期和长周期merge
-
+2. 反向噪声
+direction = (close-close.shift(N)).abs()
+vol = close.shift(1).abs().sum().rolling(window = N)
+ker = direction/(volatility + 1e-8)
+trend_dir = sign = sign(close - close.shift(N))
+因子值 = -trend_dir*(1 - ker)
 
 注意：
-ATR始终为正
-Amihudquality缺乏流动性指标始终为正
-HistoricalVol始终为正
-IntradayAmplitude
+ATR、HistoricalVolatility、IntradayAmplitude、VIXFix、IntradayAmihudquality始终为正
+
+Ferrous
+MovingAverageBias（State machine，N = 30） + OvernightVsIntraday（State machine，N = 20） + VolumeMomentum（RAW，N = 50）
 
 
-将raw转换成横截面因子
+NonFerrous（cu al）
+MovingAveragebias（State machine，N = 40） + MACD（State machine，{'fast_n': 24, 'slow_n': 52, 'signal_n': 18}）
+
+NonFerrous(others)
+DualMACrossover（State machine,{'fast_n': 20, 'slow_n': 60}）+ BuyingSellingPressure（State machine，N = 30）
+
+Energy
+movingaveragebais（State machine，N = 40） + CMF（RAW，N=40）
+
+Precious
+DualMACrossover(20, 40) + DualMACrossover(20, 60) + BuyingSellingPressure(40)
+
+Agriculture(油脂油料)
+CMF(state machine 50)
+
+Agriculture(软商品)
+DonchianChannel_{State machine  N: 50}  

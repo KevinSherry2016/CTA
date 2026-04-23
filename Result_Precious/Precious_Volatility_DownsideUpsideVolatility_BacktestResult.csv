@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+DownsideUpsideVolatility,{'N': 10},RAW,0.4169,16.696
+DownsideUpsideVolatility,{'N': 10},STATE_MACHINE,0.571,17.8792
+DownsideUpsideVolatility,{'N': 20},RAW,0.2856,16.028
+DownsideUpsideVolatility,{'N': 20},STATE_MACHINE,0.3167,13.7607
+DownsideUpsideVolatility,{'N': 30},RAW,0.6257,46.5786
+DownsideUpsideVolatility,{'N': 30},STATE_MACHINE,0.6419,35.5344
+DownsideUpsideVolatility,{'N': 40},RAW,0.6089,54.7393
+DownsideUpsideVolatility,{'N': 40},STATE_MACHINE,0.5223,33.1305
+DownsideUpsideVolatility,{'N': 50},RAW,0.595,58.508
+DownsideUpsideVolatility,{'N': 50},STATE_MACHINE,0.557,38.4863
+DownsideUpsideVolatility,{'N': 60},RAW,0.3894,39.413
+DownsideUpsideVolatility,{'N': 60},STATE_MACHINE,0.2869,19.9062

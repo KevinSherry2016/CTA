@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+OvernightVsIntraday,{'N': 10},RAW,-0.3887,-11.8369
+OvernightVsIntraday,{'N': 10},STATE_MACHINE,-0.3879,-7.638
+OvernightVsIntraday,{'N': 20},RAW,-0.2513,-11.222
+OvernightVsIntraday,{'N': 20},STATE_MACHINE,-0.3275,-9.2792
+OvernightVsIntraday,{'N': 30},RAW,-0.3737,-18.8196
+OvernightVsIntraday,{'N': 30},STATE_MACHINE,-0.2963,-10.1827
+OvernightVsIntraday,{'N': 40},RAW,-0.3174,-17.5258
+OvernightVsIntraday,{'N': 40},STATE_MACHINE,-0.418,-15.9435
+OvernightVsIntraday,{'N': 50},RAW,-0.0927,-5.5121
+OvernightVsIntraday,{'N': 50},STATE_MACHINE,-0.1078,-4.4725
+OvernightVsIntraday,{'N': 60},RAW,-0.0587,-3.7034
+OvernightVsIntraday,{'N': 60},STATE_MACHINE,0.0184,0.8104

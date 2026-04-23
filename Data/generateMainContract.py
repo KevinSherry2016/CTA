@@ -22,7 +22,7 @@ def get_contract_ym(ts_code):
     return None
 
 
-def calculate_main_contract(ts_code_list, start_date='20100101', end_date='20260404',
+def calculate_main_contract(ts_code_list, start_date='20260101', end_date=datetime.now().strftime('%Y%m%d'),
                             daily_dir='daily_data', calendar_file='trade_calendar.csv',
                             save_dir='main_contract'):
     """遍历品种，从daily_data中确定每日主力合约并保存"""
@@ -37,17 +37,37 @@ def calculate_main_contract(ts_code_list, start_date='20100101', end_date='20260
         exchange = ts_code.split('.')[1]  # 如 SHF
         print(f'正在计算 {ts_code} 的主力合约...')
 
-        current_main_ym = None  # 当前主力合约的交割年月，用于约束不能往前
-        current_main_code = None  # 当前主力合约代码
-        results = []
-        total = len(trade_dates)
 
-        for idx, date in enumerate(trade_dates):
+        save_path = os.path.join(save_dir, f'{ts_code}.csv')
+        existing_results = []
+        actual_start_date = start_date
+        current_main_ym = None  # current main contract ym
+        current_main_code = None  # current main contract code
+
+        if os.path.exists(save_path):
+            existing_df = pd.read_csv(save_path, dtype={'ts_code': str, 'trade_date': str})
+            if not existing_df.empty:
+                existing_results = existing_df.to_dict('records')
+                last_date = existing_df['trade_date'].max()
+                last_date_dt = datetime.strptime(last_date, '%Y%m%d')
+                actual_start_date = (last_date_dt + timedelta(days=1)).strftime('%Y%m%d')
+                last_ts_code = existing_df.iloc[-1]['mapping_ts_code'] if 'mapping_ts_code' in existing_df.columns else existing_df.iloc[-1]['ts_code']
+                current_main_code = last_ts_code
+                current_main_ym = get_contract_ym(last_ts_code)
+                print(f'  Found existing output, append from {actual_start_date}, current main: {current_main_code}')
+        
+        sub_trade_dates = cal_df[(cal_df['trade_date'] >= actual_start_date) & (cal_df['trade_date'] <= end_date)]['trade_date'].tolist()
+
+        results = existing_results
+        total = len(sub_trade_dates)
+
+
+        for idx, date in enumerate(sub_trade_dates):
             daily_file = os.path.join(daily_dir, f'{date}.csv')
             if not os.path.exists(daily_file):
                 continue
 
-            df = pd.read_csv(daily_file, dtype={'ts_code': str})
+            df = pd.read_csv(daily_file, dtype={'ts_code': str, 'trade_date': str})
 
             # 筛选该品种的具体合约（排除聚合行如CU.SHF）
             pattern = re.compile(rf'^{product}\d{{4}}\.{exchange}$')
@@ -87,11 +107,15 @@ def calculate_main_contract(ts_code_list, start_date='20100101', end_date='20260
                 current_main_code = main_ts_code
 
             current_main_ym = main_ym
-            results.append(main_row.drop('delivery_ym').to_dict())
+            new_row = main_row.drop('delivery_ym').to_dict()
+            new_row['mapping_ts_code'] = new_row.pop('ts_code')
+            new_row['ts_code'] = ts_code
+            results.append(new_row)
 
         if results:
             result_df = pd.DataFrame(results)
             result_df.sort_values(by='trade_date', inplace=True)
+            
             save_path = os.path.join(save_dir, f'{ts_code}.csv')
             result_df.to_csv(save_path, index=False)
             print(f'  {ts_code} 主力合约已保存至 {save_path}，共 {len(result_df)} 条')

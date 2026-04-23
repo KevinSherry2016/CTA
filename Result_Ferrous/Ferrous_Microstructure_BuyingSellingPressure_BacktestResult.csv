@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+BuyingSellingPressure,{'N': 10},RAW,0.9434,55.3866
+BuyingSellingPressure,{'N': 10},STATE_MACHINE,0.9596,43.0682
+BuyingSellingPressure,{'N': 20},RAW,0.8945,75.9234
+BuyingSellingPressure,{'N': 20},STATE_MACHINE,0.947,59.8852
+BuyingSellingPressure,{'N': 30},RAW,0.7714,77.0904
+BuyingSellingPressure,{'N': 30},STATE_MACHINE,0.8037,60.3638
+BuyingSellingPressure,{'N': 40},RAW,0.7868,88.5503
+BuyingSellingPressure,{'N': 40},STATE_MACHINE,0.7707,64.5745
+BuyingSellingPressure,{'N': 50},RAW,0.7545,91.5854
+BuyingSellingPressure,{'N': 50},STATE_MACHINE,0.7266,66.6833
+BuyingSellingPressure,{'N': 60},RAW,0.7079,93.5496
+BuyingSellingPressure,{'N': 60},STATE_MACHINE,0.6891,68.4204

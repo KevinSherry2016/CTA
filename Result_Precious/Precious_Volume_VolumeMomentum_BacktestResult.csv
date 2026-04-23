@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+VolumeMomentum,{'N': 10},RAW,0.2719,6.6439
+VolumeMomentum,{'N': 10},STATE_MACHINE,-0.1898,-3.0355
+VolumeMomentum,{'N': 20},RAW,0.0507,1.9534
+VolumeMomentum,{'N': 20},STATE_MACHINE,-0.209,-5.4767
+VolumeMomentum,{'N': 30},RAW,-0.2712,-12.4147
+VolumeMomentum,{'N': 30},STATE_MACHINE,-0.4169,-14.2042
+VolumeMomentum,{'N': 40},RAW,-0.1003,-5.7484
+VolumeMomentum,{'N': 40},STATE_MACHINE,-0.4488,-18.9861
+VolumeMomentum,{'N': 50},RAW,-0.1946,-14.4293
+VolumeMomentum,{'N': 50},STATE_MACHINE,-0.4923,-25.9597
+VolumeMomentum,{'N': 60},RAW,-0.1934,-16.4401
+VolumeMomentum,{'N': 60},STATE_MACHINE,-0.4632,-27.6893

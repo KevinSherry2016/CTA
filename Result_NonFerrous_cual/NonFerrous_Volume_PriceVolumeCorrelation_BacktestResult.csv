@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+PriceVolumeCorrelation,{'N': 10},RAW,0.5702,12.7904
+PriceVolumeCorrelation,{'N': 10},STATE_MACHINE,0.4904,9.804
+PriceVolumeCorrelation,{'N': 20},RAW,0.6398,18.5599
+PriceVolumeCorrelation,{'N': 20},STATE_MACHINE,0.5575,13.8902
+PriceVolumeCorrelation,{'N': 30},RAW,0.5949,20.0938
+PriceVolumeCorrelation,{'N': 30},STATE_MACHINE,0.3808,10.5097
+PriceVolumeCorrelation,{'N': 40},RAW,0.5005,18.2686
+PriceVolumeCorrelation,{'N': 40},STATE_MACHINE,0.3865,11.096
+PriceVolumeCorrelation,{'N': 50},RAW,0.3792,14.5954
+PriceVolumeCorrelation,{'N': 50},STATE_MACHINE,0.2661,8.0426
+PriceVolumeCorrelation,{'N': 60},RAW,0.3644,14.5294
+PriceVolumeCorrelation,{'N': 60},STATE_MACHINE,0.2445,7.5116

@@ -1,0 +1,13 @@
+Factor,Parameters,Mode,SharpRatio,POT
+AmihudIlliquidity,{'N': 10},RAW,-0.0823,-15.9886
+AmihudIlliquidity,{'N': 10},STATE_MACHINE,0.2993,43.4307
+AmihudIlliquidity,{'N': 20},RAW,-0.1829,-58.7915
+AmihudIlliquidity,{'N': 20},STATE_MACHINE,0.305,44.2417
+AmihudIlliquidity,{'N': 30},RAW,-0.1591,-68.1953
+AmihudIlliquidity,{'N': 30},STATE_MACHINE,0.2949,42.8321
+AmihudIlliquidity,{'N': 40},RAW,-0.0877,-42.1787
+AmihudIlliquidity,{'N': 40},STATE_MACHINE,0.2976,43.1913
+AmihudIlliquidity,{'N': 50},RAW,-0.0554,-36.3482
+AmihudIlliquidity,{'N': 50},STATE_MACHINE,0.2991,43.6096
+AmihudIlliquidity,{'N': 60},RAW,0.0372,23.8644
+AmihudIlliquidity,{'N': 60},STATE_MACHINE,0.2992,43.7381

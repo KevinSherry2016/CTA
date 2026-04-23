@@ -18,19 +18,20 @@
 ### 2.2 稳健性判定与输出表格：
 综合1和2，研判所选的参数是否靠谱并存在向未来偏移的问题（Overfitting）。验证通过后，将这组“最靠谱参数”提列出来构建下方汇总表：
 
-| Strategy/Factor Name | Robust Params | Plateau Verified | Annual Consistency | Sharpe @ Robust | POT @ Robust |
+| Strategy/Factor Name | Factor Mode| Robust Params | Plateau Verified | Annual Consistency | Sharpe @ Robust | POT @ Robust |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | ... | ... | ... | ... | ... | ... |
 
 - **指标说明**：
+  - `Factor Mode`: 因子模式，raw或者state machine
   - `Robust Params`: 经过参数高原和年度一致性双重检验后选出的最稳健参数组。
   - `Plateau Verified`: 该组合是否处于明显的宽阔参数高原 (Yes/No)。
   - `Annual Consistency`: 描述其稳健年份的占比或排名稳定性。
   - `POT`: 每万份换手净收益（代表滑点摩擦承受能力）。
 
 ### 2.3 模式效果对比 (Mode Comparison)
-对于每一类因子（以及单一筛选出的稳健因子），都必须对其 `RAW` 模式和 `STATE_MACHINE` 模式的回测效果进行比较。
-- 提取两种模式在最稳健参数下的核心绩效指标（仅比较 Sharpe Ratio 和 POT）并输出csv表格进行对比。
+对于每一类因子，对其 `RAW` 模式和 `STATE_MACHINE` 模式的回测效果进行比较，输出以下对比表格。
+| Strategy/Factor Name | RAW Sharpe @ Average |StateMachine Sharpe @ Average |RAW POT @ Average |StateMachine POT @ Average |
 
 ## 3. PnL 相关性矩阵 (PnL Correlation Matrix)
 分析因子之间收益特征的同质性。我们关注的是策略盈亏（PnL）的线性相关性。
