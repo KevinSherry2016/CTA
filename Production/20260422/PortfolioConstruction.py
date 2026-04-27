@@ -37,6 +37,7 @@ def do_merge_and_normalize(OUTPUT_NAME, FILE_WEIGHTS, RESULT_DIR, marketDataPath
     OUTPUT_POS = os.path.join(RESULT_DIR, f'{OUTPUT_NAME}_norm_Position.csv')
     OUTPUT_PNL = os.path.join(RESULT_DIR, f'{OUTPUT_NAME}_norm_PnL.csv')
     OUTPUT_PNG = os.path.join(RESULT_DIR, f'{OUTPUT_NAME}_cPnL.png')
+    OUTPUT_GMV = os.path.join(RESULT_DIR, f'{OUTPUT_NAME}_GMV.csv')
     
     # Optional Global input glob if files not specified
     INPUT_GLOB = '*_norm_Position.csv'
@@ -121,6 +122,10 @@ def do_merge_and_normalize(OUTPUT_NAME, FILE_WEIGHTS, RESULT_DIR, marketDataPath
     
     norm_pos_df.to_csv(OUTPUT_POS, encoding='utf-8-sig')
     norm_daily_pnl.to_frame(name='PnL').to_csv(OUTPUT_PNL, encoding='utf-8-sig')
+    
+    # ==== GMV ====
+    gmv = norm_pos_df.abs().sum(axis=1)
+    gmv.to_frame(name='GMV').to_csv(OUTPUT_GMV, encoding='utf-8-sig')
     
     # ==== Plotting ====
     _mc_df = main_contract_df.reindex(index=norm_pos_df.index, columns=norm_pos_df.columns)
