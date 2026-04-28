@@ -14,7 +14,7 @@ def main():
     # Run each factor script
     for script in factor_scripts:
         base_name = os.path.basename(script)
-        if base_name in ['run_all.py', 'PortfolioConstruction.py', 'RiskControl.py', 'Merge.py']:
+        if base_name in ['run_all.py', 'PortfolioConstruction.py','Merge.py']:
             continue
         print(f"Running factor script: {base_name}")
         try:
@@ -29,13 +29,8 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"Error running {PORTFOLIO_SCRIPT}: {e}")
 
-    # After portfolio construction has run, run the risk control script
-    print(f"\nRunning risk control script: {os.path.basename(RISK_SCRIPT)}")
-    try:
-        subprocess.run(['python', RISK_SCRIPT], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running {RISK_SCRIPT}: {e}")
-
+    # After portfolio construction has run, you are now running the merged risk control script directly
+    # So we don't need to run RiskControl.py anymore.
     print("\nAll tasks completed successfully.")
 
 if __name__ == '__main__':
