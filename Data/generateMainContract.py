@@ -22,7 +22,7 @@ def get_contract_ym(ts_code):
     return None
 
 
-def calculate_main_contract(ts_code_list, start_date='20260101', end_date=datetime.now().strftime('%Y%m%d'),
+def calculate_main_contract(ts_code_list, start_date='20100101', end_date=datetime.now().strftime('%Y%m%d'),
                             daily_dir='daily_data', calendar_file='trade_calendar.csv',
                             save_dir='main_contract'):
     """遍历品种，从daily_data中确定每日主力合约并保存"""
@@ -80,10 +80,10 @@ def calculate_main_contract(ts_code_list, start_date='20260101', end_date=dateti
             contracts['delivery_ym'] = contracts['ts_code'].apply(get_contract_ym)
             contracts = contracts[contracts['delivery_ym'].notna()]
 
-            # 约束1：排除已进入交割月之后的合约（合约YYMM < 当前月份则已过期）
+            # 约束1：排除已进入交割月当月的合约（合约YYMM <= 当前月份则已过期或需强制换月）
             trade_dt = datetime.strptime(date, '%Y%m%d')
             current_ym = (trade_dt.year, trade_dt.month)
-            contracts = contracts[contracts['delivery_ym'].apply(lambda ym: ym >= current_ym)]
+            contracts = contracts[contracts['delivery_ym'].apply(lambda ym: ym > current_ym)]
 
             if contracts.empty:
                 continue
