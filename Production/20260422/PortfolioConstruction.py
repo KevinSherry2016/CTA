@@ -70,11 +70,20 @@ def convert_simple_to_compound(file_path, output_path, start_date=None, target_v
             running_max_dd = drawdown
         max_drawdowns.append(running_max_dd)
         
-        if drawdown <= 0.05:
+        # if drawdown <= 0.05:
+        #     current_position = 1.0
+        # elif drawdown <= 0.10:
+        #     current_position = 0.8
+        # elif drawdown <= 0.15:
+        #     current_position = 0.5
+        # else:
+        #     current_position = 0.3
+
+        if drawdown <= 0.03:
             current_position = 1.0
-        elif drawdown <= 0.10:
+        elif drawdown <= 0.05:
             current_position = 0.8
-        elif drawdown <= 0.15:
+        elif drawdown <= 0.08:
             current_position = 0.5
         else:
             current_position = 0.3
@@ -326,55 +335,6 @@ def main():
             }
         },
 
-        # ##在合并的基础上进行仓位中性化处理，得到 Delta Neutral 版本的组合策略
-        # {
-        #     'output_name': 'L2_Sector_Merge_NonFerrous_DeltaNeutral',
-        #     'type': 'delta_neutral',
-        #     'file_weights': ['L2_Sector_Merge_NonFerrous_norm_Position.csv']
-        # },
-
-        # {
-        #     'output_name': 'L1_Sector_Merge_Precious_DeltaNeutral',
-        #     'type': 'delta_neutral',
-        #     'file_weights': ['L1_Sector_Merge_Precious_norm_Position.csv']
-        # },
-
-        # {
-        #     'output_name': 'L1_Sector_Merge_Energy_DeltaNeutral',
-        #     'type': 'delta_neutral',
-        #     'file_weights': ['L1_Sector_Merge_Energy_norm_Position.csv']
-        # },
-
-        # {
-        #     'output_name': 'L1_Sector_Merge_Agriculture_DeltaNeutral',
-        #     'type': 'delta_neutral',
-        #     'file_weights': ['L1_Sector_Merge_Agriculture_norm_Position.csv']
-        # },
-
-        # {
-        #     'output_name': 'L1_Sector_Merge_Ferrous_DeltaNeutral',
-        #     'type': 'delta_neutral',
-        #     'file_weights': ['L1_Sector_Merge_Ferrous_norm_Position.csv']
-        # },
-
-        # {
-        #     'output_name': 'L3_Sector_Merge_All',
-        #     'type': 'merge',
-        #     'file_weights': {
-        #         'L2_Sector_Merge_NonFerrous_norm_Position.csv': 12.5,
-        #         'L2_Sector_Merge_NonFerrous_DeltaNeutral_norm_Position.csv': 12.5,
-        #         'L1_Sector_Merge_Precious_norm_Position.csv': 2.5,
-        #         'L1_Sector_Merge_Precious_DeltaNeutral_norm_Position.csv': 2.5,
-        #         'L1_Sector_Merge_Energy_norm_Position.csv': 12.5,
-        #         'L1_Sector_Merge_Energy_DeltaNeutral_norm_Position.csv': 12.5,
-        #         'L1_Sector_Merge_Agriculture_norm_Position.csv': 10,
-        #         'L1_Sector_Merge_Agriculture_DeltaNeutral_norm_Position.csv': 10,
-        #         'L1_Sector_Merge_Ferrous_norm_Position.csv': 12.5,
-        #         'L1_Sector_Merge_Ferrous_DeltaNeutral_norm_Position.csv': 12.5,
-        #     }
-        # },
-
-
         {
             'output_name': 'L3_Sector_Merge_All',
             'type': 'merge',
@@ -398,7 +358,7 @@ def main():
             'type': 'merge',
             'file_weights': {
                 'L3_Sector_Merge_All_norm_Position.csv': 50,
-                'L3_Sector_Merge_All_DeltaNeutral_norm_Position.csv': 50,
+                'L3_Sector_Merge_All_DeltaNeutral_norm_Position.csv': 100,
             }
         },
     ]
