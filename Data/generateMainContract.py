@@ -101,6 +101,15 @@ def calculate_main_contract(ts_code_list, start_date='20100101', end_date=dateti
             main_ts_code = main_row['ts_code']
             main_ym = main_row['delivery_ym']
 
+            sub_mapping_ts_code = None
+            sub_row_dict = {}
+            if len(contracts) > 1:
+                sub_row = contracts.iloc[1]
+                sub_mapping_ts_code = sub_row['ts_code']
+                for col in sub_row.index:
+                    if col not in ['ts_code', 'trade_date', 'delivery_ym']:
+                        sub_row_dict[f'sub_{col}'] = sub_row[col]
+
             # 输出进度和换月信息
             if current_main_code != main_ts_code:
                 print(f'  [{idx+1}/{total}] {date} 主力切换: {current_main_code} -> {main_ts_code} (oi={main_row["oi"]})')
@@ -109,6 +118,8 @@ def calculate_main_contract(ts_code_list, start_date='20100101', end_date=dateti
             current_main_ym = main_ym
             new_row = main_row.drop('delivery_ym').to_dict()
             new_row['mapping_ts_code'] = new_row.pop('ts_code')
+            new_row['sub_mapping_ts_code'] = sub_mapping_ts_code
+            new_row.update(sub_row_dict)
             new_row['ts_code'] = ts_code
             results.append(new_row)
 
