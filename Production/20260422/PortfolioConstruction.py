@@ -381,7 +381,7 @@ def main():
     output_file = os.path.join(RESULT_DIR, f"{final_output_name}_compound_net_value.csv")
     
     target_volatility = 0.20 # 默认使用20%年化波动计算风险指标
-    convert_simple_to_compound(input_file, output_file, start_date='20190101', target_volatility=target_volatility, divisor=100.0)
+    convert_simple_to_compound(input_file, output_file, start_date='20200101', target_volatility=target_volatility, divisor=100.0)
 
 if __name__ == "__main__":
     main()
