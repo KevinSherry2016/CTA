@@ -1,8 +1,3 @@
-行情数据
-fetchDailyData -> 获取每日行情数据
-
-
-
 因子库：
 动量与趋势类因子（Trend & Momentum）
 1. 收益率因子：
@@ -146,3 +141,6 @@ CMF(state machine 50)
 
 Agriculture(软商品)
 DonchianChannel_{State machine  N: 50}  
+
+
+TODO：
