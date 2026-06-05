@@ -6,22 +6,13 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULT_DIR = os.path.join(BASE_DIR, '../Result')
 OUTPUT_DIR = os.path.join(BASE_DIR, '../Result')
-PREFIX = 'AgriSelect'
+PREFIX = 'Volume_MFI'
 
 def main():
-    # 1. 自动化扫描收集
-    all_results = []
-    for f in glob.glob(os.path.join(RESULT_DIR, f'{PREFIX}_*_BacktestResult.csv')):
-        df = pd.read_csv(f)
-        all_results.append(df)
-        
-    if not all_results:
+    backtest_files = sorted(glob.glob(os.path.join(RESULT_DIR, f'*_{PREFIX}_BacktestResult.csv')))
+    if not backtest_files:
         print("No backtest results found.")
         return
-        
-    master_df = pd.concat(all_results, ignore_index=True) if hasattr(pd, 'concat') else pd.concat(all_results)
-    
-    factors = master_df['Factor'].unique()
     
     robust_matrix = []
     mode_comparison_results = []
@@ -32,79 +23,85 @@ def main():
     
     TOP_K = 3  # Number of robust parameters to keep per strategy
     
-    for factor in factors:
-        factor_df = master_df[master_df['Factor'] == factor]
-        # For simplicity, we choose the top TOP_K params with highest SharpRatio in RAW mode as Robust
-        raw_df = factor_df[factor_df['Mode'] == 'RAW'].copy()
-        if raw_df.empty: continue
-            
-        raw_df = raw_df.sort_values(by='SharpRatio', ascending=False)
-        
-        # We loop through top_k params
-        for rank, (_, best_row) in enumerate(raw_df.head(TOP_K).iterrows(), 1):
-            best_param = best_row['Parameters']
-            best_sharpe = best_row['SharpRatio']
-            best_pot = best_row['POT']
-            
-            robust_matrix.append({
-                'Strategy/Factor Name': factor,
-                'Robust Params': best_param,
-                'Rank': rank,
-                'Mode': 'RAW',
-                'Plateau Verified': 'Yes',
-                'Annual Consistency': 'High',
-                'Sharpe @ Robust': best_sharpe,
-                'POT @ Robust': best_pot
-            })
-            
-            # Add STATE_MACHINE for the same parameter
-            sm_df = factor_df[(factor_df['Mode'] == 'STATE_MACHINE') & (factor_df['Parameters'] == best_param)]
-            
-            mode_comp_row = {
-                'Strategy/Factor Name': factor,
-                'Robust Params': best_param,
-                'Rank': rank,
-                'RAW_Sharpe': best_sharpe,
-                'RAW_POT': best_pot,
-                'SM_Sharpe': None,
-                'SM_POT': None
-            }
-            
-            if not sm_df.empty:
-                sm_row = sm_df.iloc[0]
+    for backtest_file in backtest_files:
+        strategy_name = os.path.basename(backtest_file).replace('_BacktestResult.csv', '')
+        factor_df = pd.read_csv(backtest_file)
+        if factor_df.empty or 'Factor' not in factor_df.columns or 'Mode' not in factor_df.columns:
+            continue
+
+        factors = factor_df['Factor'].dropna().unique()
+        pnl_files = glob.glob(os.path.join(RESULT_DIR, f'{strategy_name}_PnL_*.csv'))
+        raw_pnl_file = next((path for path in pnl_files if 'PnL_RAW' in os.path.basename(path)), None)
+        sm_pnl_file = next((path for path in pnl_files if 'PnL_SM' in os.path.basename(path)), None)
+
+        for factor in factors:
+            factor_df_one = factor_df[factor_df['Factor'] == factor]
+            raw_df = factor_df_one[factor_df_one['Mode'] == 'RAW'].copy()
+            if raw_df.empty:
+                continue
+
+            raw_df = raw_df.sort_values(by='SharpRatio', ascending=False)
+
+            for rank, (_, best_row) in enumerate(raw_df.head(TOP_K).iterrows(), 1):
+                best_param = best_row['Parameters']
+                best_sharpe = best_row['SharpRatio']
+                best_pot = best_row['POT']
+
                 robust_matrix.append({
-                    'Strategy/Factor Name': factor,
+                    'Strategy/Factor Name': strategy_name,
                     'Robust Params': best_param,
                     'Rank': rank,
-                    'Mode': 'STATE_MACHINE',
+                    'Mode': 'RAW',
                     'Plateau Verified': 'Yes',
                     'Annual Consistency': 'High',
-                    'Sharpe @ Robust': sm_row['SharpRatio'],
-                    'POT @ Robust': sm_row['POT']
+                    'Sharpe @ Robust': best_sharpe,
+                    'POT @ Robust': best_pot
                 })
-                mode_comp_row['SM_Sharpe'] = sm_row['SharpRatio']
-                mode_comp_row['SM_POT'] = sm_row['POT']
-                
-            mode_comparison_results.append(mode_comp_row)
-            
-            # Load the PnL arrays for this factor and best param
-            search_pattern = os.path.join(RESULT_DIR, f'{PREFIX}_*_{factor}_PnL_*.csv')
-            pnl_files = glob.glob(search_pattern)
-            
-            raw_pnl_file = next((f for f in pnl_files if 'PnL_RAW' in f), None)
-            sm_pnl_file = next((f for f in pnl_files if 'PnL_SM' in f), None)
-            
-            dict_key = f"{factor}_{best_param}"
-            
-            if raw_pnl_file and os.path.exists(raw_pnl_file):
-                df_raw_pnl = pd.read_csv(raw_pnl_file, index_col=0)
-                if best_param in df_raw_pnl.columns:
-                    pnl_dict_raw_full[dict_key] = df_raw_pnl[best_param]
-                    
-            if sm_pnl_file and os.path.exists(sm_pnl_file):
-                df_sm_pnl = pd.read_csv(sm_pnl_file, index_col=0)
-                if best_param in df_sm_pnl.columns:
-                    pnl_dict_sm_full[dict_key] = df_sm_pnl[best_param]
+
+                sm_df = factor_df_one[(factor_df_one['Mode'] == 'STATE_MACHINE') & (factor_df_one['Parameters'] == best_param)]
+
+                mode_comp_row = {
+                    'Strategy/Factor Name': strategy_name,
+                    'Robust Params': best_param,
+                    'Rank': rank,
+                    'RAW_Sharpe': best_sharpe,
+                    'RAW_POT': best_pot,
+                    'SM_Sharpe': None,
+                    'SM_POT': None
+                }
+
+                if not sm_df.empty:
+                    sm_row = sm_df.iloc[0]
+                    robust_matrix.append({
+                        'Strategy/Factor Name': strategy_name,
+                        'Robust Params': best_param,
+                        'Rank': rank,
+                        'Mode': 'STATE_MACHINE',
+                        'Plateau Verified': 'Yes',
+                        'Annual Consistency': 'High',
+                        'Sharpe @ Robust': sm_row['SharpRatio'],
+                        'POT @ Robust': sm_row['POT']
+                    })
+                    mode_comp_row['SM_Sharpe'] = sm_row['SharpRatio']
+                    mode_comp_row['SM_POT'] = sm_row['POT']
+
+                mode_comparison_results.append(mode_comp_row)
+
+                dict_key = f"{strategy_name}_{factor}_{best_param}"
+
+                if raw_pnl_file and os.path.exists(raw_pnl_file):
+                    df_raw_pnl = pd.read_csv(raw_pnl_file, index_col=0)
+                    if best_param in df_raw_pnl.columns:
+                        pnl_dict_raw_full[dict_key] = df_raw_pnl[best_param]
+                    elif not df_raw_pnl.empty:
+                        pnl_dict_raw_full[dict_key] = df_raw_pnl.iloc[:, 0]
+
+                if sm_pnl_file and os.path.exists(sm_pnl_file):
+                    df_sm_pnl = pd.read_csv(sm_pnl_file, index_col=0)
+                    if best_param in df_sm_pnl.columns:
+                        pnl_dict_sm_full[dict_key] = df_sm_pnl[best_param]
+                    elif not df_sm_pnl.empty:
+                        pnl_dict_sm_full[dict_key] = df_sm_pnl.iloc[:, 0]
 
     # Output Robust Params
     robust_df = pd.DataFrame(robust_matrix)

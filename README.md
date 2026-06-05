@@ -144,3 +144,30 @@ DonchianChannel_{State machine  N: 50}
 
 
 TODO：
+重构代码
+从因子层面出发，直接生成以下内容：
+1. backtestresult.csv
+2. position.csv
+3. pnl.csv
+3. comsumpnl.jpg
+4. bytypecomsumpnl.jpg
+
+支持：
+1. 因子值和状态机
+2. 分板块
+3. 剔除个别品种
+即将原先的result和evaluate合并
+
+
+6.5 9：00处理：
+标准化流程：
+因子模块：
+因子计算 -> 产生position ->产生pnl
+支持：
+1. 不同参数
+2. 不同板块的表现
+3. 不同品种的表现
+
+
+评估模块：
+根据开始时间、介绍时间和position，来计算得到pnl -> 标准化 -> 开始评估（图表等）
