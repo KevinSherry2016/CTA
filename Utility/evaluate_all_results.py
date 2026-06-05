@@ -16,6 +16,8 @@ NORM_END_DATE = '20201231'
 SUMMARY_METRICS_CSV = 'all_metrics_summary.csv'
 CLOSE_CACHE = {}
 MAIN_CONTRACT_CACHE = {}
+VOL_WINDOW = 20
+POSITION_EWM_SPAN = 10
 
 
 def load_positions(position_csv_path):
@@ -69,7 +71,20 @@ def calc_raw_pnl(positions, close_df):
     return pos_df, pnl_per_asset, daily_pnl
 
 
-def calc_normalized(pos_df, pnl_per_asset, daily_pnl, info, norm_start=None, norm_end=None):
+def apply_risk_parity_scaling(positions, close_df, vol_window=20):
+    ret_df = close_df.pct_change(fill_method=None)
+    rolling_vol = ret_df.rolling(window=vol_window, min_periods=1).std()
+
+    aligned_positions = positions.reindex(index=close_df.index, columns=close_df.columns).fillna(0.0)
+    scaled_positions = aligned_positions.divide(rolling_vol.replace(0, pd.NA))
+    return scaled_positions.replace([pd.NA, float('inf'), float('-inf')], 0.0).fillna(0.0)
+
+
+def smooth_positions(positions, ewm_span=10):
+    return positions.ewm(span=ewm_span, adjust=False, min_periods=1).mean().fillna(0.0)
+
+
+def calc_normalized(pos_df, pnl_per_asset, daily_pnl, info, norm_start=None, norm_end=None, position_for_output_df=None):
     pnl_for_scale = daily_pnl
     if norm_start is not None:
         pnl_for_scale = pnl_for_scale[pnl_for_scale.index >= norm_start]
@@ -79,7 +94,9 @@ def calc_normalized(pos_df, pnl_per_asset, daily_pnl, info, norm_start=None, nor
     if scale == 0 or pd.isna(scale):
         scale = 1.0
 
-    norm_pos_df = pos_df / scale
+    if position_for_output_df is None:
+        position_for_output_df = pos_df
+    norm_pos_df = position_for_output_df.reindex(index=pos_df.index, columns=pos_df.columns).fillna(0.0) / scale
     norm_pnl_per_asset = pnl_per_asset / scale
     norm_daily_pnl = daily_pnl / scale
 
@@ -182,15 +199,28 @@ def evaluate_one_position_file(position_csv_path, info):
     symbols = positions.columns.tolist()
     close_df = load_close_data(symbols, trading_days)
     main_contract_df = load_main_contract(symbols, trading_days)
+    risk_parity_positions = apply_risk_parity_scaling(
+        positions, close_df, vol_window=VOL_WINDOW
+    )
+    final_positions = smooth_positions(risk_parity_positions, ewm_span=POSITION_EWM_SPAN)
 
-    pos_df, pnl_per_asset, daily_pnl = calc_raw_pnl(positions, close_df)
+    pos_df, pnl_per_asset, daily_pnl = calc_raw_pnl(final_positions, close_df)
     norm_pos_df, norm_pnl_per_asset, norm_daily_pnl, norm_sector_daily, scale = calc_normalized(
-        pos_df, pnl_per_asset, daily_pnl, info, NORM_START_DATE, NORM_END_DATE
+        pos_df,
+        pnl_per_asset,
+        daily_pnl,
+        info,
+        NORM_START_DATE,
+        NORM_END_DATE,
+        position_for_output_df=final_positions,
     )
     metrics = calc_metrics(norm_daily_pnl, norm_pos_df, main_contract_df)
     trade_dates = pd.to_datetime(norm_daily_pnl.index, format='%Y%m%d')
 
     output_prefix = position_csv_path.stem
+
+    final_pos_path = OUTPUT_DIR / f'{output_prefix}_position_final.csv'
+    final_positions.to_csv(final_pos_path, encoding='utf-8-sig')
 
     raw_pnl_df = pnl_per_asset.copy()
     raw_pnl_df.insert(0, 'dailyPnl', daily_pnl)
