@@ -1,74 +1,107 @@
-# ==============================================================================
-# 因子类别：Volume
-# 因子名称：Volume_PriceOiDivergence
-# 代表意义：量价背离与资金流向。利用持仓量变动方向鉴别行情质量。涨跌由增仓推动信号同向，由减仓推动则产生逆向反转信号。
+﻿# ==============================================================================
+# Factor Category: Volume
+# Factor Name: Volume_PriceOiDivergence
+# Description: factor signal definition
 # ==============================================================================
 
 import pandas as pd
 import numpy as np
 import os
 
-def main():
-    marketDataPath = './main_contract/'
-    infoPath = './Info.csv'
-    calendarPath = './trade_calendar.csv'
+FACTOR_NAME = 'Volume_PriceOiDivergence'
+N_LIST = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120]
+EXCLUDED_SECTORS = ['Bond', 'StockIndex', 'Other', 'Others', 'Financial']
+EXCLUDED_SYMBOLS = []
+CUSTOM_GROUPS = [
+    {
+        'name': 'CustomSymbols',
+        'symbols': []
+    }
+]
 
-    info = pd.read_csv(infoPath, encoding='utf-8-sig')
-    valid_sectors = info[~info['sector'].str.lower().isin(['bond', 'stockindex', 'others', 'other', 'financial'])]
-    ts_code_list = valid_sectors['ts_code'].tolist()
 
-    data = {}
-    print(f"正在加载 Volume_PriceOiDivergence 数据...")
+def _safe_name(text):
+    return ''.join(ch for ch in str(text) if ch.isalnum() or ch in ['_', '-', '.'])
 
-    tradingDayList = []
-    for ts_code in ts_code_list:
-        filepath = os.path.join(marketDataPath, f"{ts_code}.csv")
-        if os.path.exists(filepath):
-            df = pd.read_csv(filepath)
-            df['trade_date'] = df['trade_date'].astype(str)
-            df.set_index('trade_date', inplace=True)
-            if len(tradingDayList) == 0:
-                tradingDayList = df.index.tolist()
-            data[ts_code] = df
 
-    N = 40
+def _param_str(n_value):
+    return f"N{n_value}"
+
+
+def _calc_signal(df, n_value):
+    close = df['adj_close']
+    oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
+    raw_close = df.get('close', close)
+    adj_factor = close / raw_close.replace(0, np.nan)
+    is_rollover = adj_factor.diff().abs() > 1e-5
+    invalid_window = is_rollover.rolling(window=n_value, min_periods=1).max() > 0
+
+    price_ret = close.pct_change(periods=n_value).fillna(0)
+    oi_change = oi.pct_change(periods=n_value).fillna(0)
+    signal = price_ret * np.sign(oi_change)
+    signal[invalid_window] = np.nan
+    return signal.ffill()
+
+
+def _load_symbol_signal(ts_code, market_data_path, n_value):
+    filepath = os.path.join(market_data_path, f"{ts_code}.csv")
+    if not os.path.exists(filepath):
+        return None
+
+    df = pd.read_csv(filepath)
+    if 'trade_date' not in df.columns:
+        return None
+
+    df['trade_date'] = df['trade_date'].astype(str)
+    df.set_index('trade_date', inplace=True)
+    return _calc_signal(df, n_value).rename(ts_code)
+
+
+def _run_and_save(target_name, symbols, market_data_path, n_value):
     position_series = {}
+    for ts_code in symbols:
+        signal = _load_symbol_signal(ts_code, market_data_path, n_value)
+        if signal is not None:
+            position_series[ts_code] = signal
 
-    print(f"开始计算 Volume_PriceOiDivergence 因子信号...")
-    for ts_code, df in data.items():
-        close = df['adj_close']
-        open_p = df['adj_open']
-        high = df['adj_high']
-        low = df['adj_low']
-        volume = df.get('vol', df.get('Volume', pd.Series(dtype=float)))
-        oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
+    if not position_series:
+        print(f"skip {target_name}: no valid data")
+        return
 
-        # --- 因子计算逻辑 ---
-        # 1. 判断换月：通过复权因子变动进行判断
-        raw_close = df.get('close', close)
-        adj_factor = close / raw_close.replace(0, np.nan)
-        is_rollover = adj_factor.diff().abs() > 1e-5
-        
-        # 2. 只要过去N天内发生过换月，直接剔除并用 ffill 继承之前信号
-        invalid_window = is_rollover.rolling(window=N, min_periods=1).max() > 0
+    signals = pd.DataFrame(position_series).sort_index().fillna(0).astype(float)
 
-        price_ret = close.pct_change(periods=N).fillna(0)
-        oi_change = oi.pct_change(periods=N).fillna(0)
-        
-        # 增仓表明趋势成立(同向)，减仓表明趋势存疑产生衰竭(反向)
-        signal = price_ret * np.sign(oi_change)
-        
-        signal[invalid_window] = np.nan
-        signal = signal.ffill()
-        # --------------------
+    raw_output_name = f"{FACTOR_NAME}_{_safe_name(target_name)}_{_param_str(n_value)}_RAW_Position.csv"
+    raw_output_path = os.path.join('./Result', raw_output_name)
+    signals.to_csv(raw_output_path, encoding='utf-8-sig')
 
-        position_series[ts_code] = signal
+    print(f"Factor {FACTOR_NAME} output saved: {raw_output_path}")
 
-    signals = pd.DataFrame(position_series, index=tradingDayList).fillna(0).astype(float)
-    output_name = f"Volume_PriceOiDivergence.csv"
-    output_path = os.path.join('./Result', output_name)
-    signals.to_csv(output_path, encoding='utf-8-sig')
-    print(f"因子 Volume_PriceOiDivergence 输出完成: {output_path}")
+def main():
+    market_data_path = './main_contract/'
+    info_path = './Info.csv'
+
+    info = pd.read_csv(info_path, encoding='utf-8-sig')
+    valid_info = info[~info['sector'].str.lower().isin([s.lower() for s in EXCLUDED_SECTORS])]
+    if EXCLUDED_SYMBOLS:
+        valid_info = valid_info[~valid_info['ts_code'].isin(EXCLUDED_SYMBOLS)]
+    valid_symbol_set = set(valid_info['ts_code'].tolist())
+    print(f"Loading {FACTOR_NAME} data...")
+    for n_value in N_LIST:
+        _run_and_save("ALL", sorted(valid_symbol_set), market_data_path, n_value)
+        for sector in sorted(valid_info['sector'].dropna().unique().tolist()):
+            sector_symbols = valid_info[valid_info['sector'] == sector]['ts_code'].tolist()
+            _run_and_save(sector, sector_symbols, market_data_path, n_value)
+
+        for group in CUSTOM_GROUPS:
+            raw_symbols = group.get('symbols', [])
+            if isinstance(raw_symbols, str):
+                raw_symbols = [raw_symbols]
+            group_symbols = [s for s in raw_symbols if s in valid_symbol_set]
+            group_symbols = sorted(set(group_symbols))
+            merged_name = '_'.join(group_symbols) if group_symbols else group.get('name', 'CustomGroup')
+            _run_and_save(merged_name, group_symbols, market_data_path, n_value)
 
 if __name__ == "__main__":
     main()
+
+

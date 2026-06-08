@@ -1,7 +1,7 @@
 ﻿# ==============================================================================
-# 因子族：TrendMomentum
-# 因子名称：TrendMomentum_DualMACrossover
-# 因子说明：双均线交叉信号
+# Factor Category: TrendMomentum
+# Factor Name: TrendMomentum_DualMACrossover
+# Description: factor signal definition
 # ==============================================================================
 
 import pandas as pd
@@ -61,31 +61,22 @@ def _load_symbol_signal(ts_code, market_data_path, param):
 def _run_and_save(target_name, symbols, market_data_path, param):
     position_series = {}
     for ts_code in symbols:
-        print(
-            f"开始计算 {FACTOR_NAME} 因子信号... "
-            f"symbol={ts_code}, fast={param['fast_n']}, slow={param['slow_n']}"
-        )
         signal = _load_symbol_signal(ts_code, market_data_path, param)
         if signal is not None:
             position_series[ts_code] = signal
 
     if not position_series:
-        print(f"跳过 {target_name}: 无有效数据")
+        print(f"Skip {target_name}: no valid data")
         return
 
     signals = pd.DataFrame(position_series).sort_index().fillna(0).astype(float)
-    state_machine = np.sign(signals).fillna(0).astype(float)
 
     raw_output_name = f"{FACTOR_NAME}_{_safe_name(target_name)}_{_param_str(param)}_RAW_Position.csv"
     raw_output_path = os.path.join('./Result', raw_output_name)
     signals.to_csv(raw_output_path, encoding='utf-8-sig')
 
-    sm_output_name = f"{FACTOR_NAME}_{_safe_name(target_name)}_{_param_str(param)}_STATE_MACHINE_Position.csv"
-    sm_output_path = os.path.join('./Result', sm_output_name)
-    state_machine.to_csv(sm_output_path, encoding='utf-8-sig')
 
-    print(f"因子 {FACTOR_NAME} 输出完成: {raw_output_path}")
-    print(f"因子 {FACTOR_NAME} 输出完成: {sm_output_path}")
+    print(f"Factor {FACTOR_NAME} output saved: {raw_output_path}")
 
 
 def main():
@@ -98,12 +89,10 @@ def main():
         valid_info = valid_info[~valid_info['ts_code'].isin(EXCLUDED_SYMBOLS)]
     valid_symbol_set = set(valid_info['ts_code'].tolist())
 
-    print(f"正在加载 {FACTOR_NAME} 数据...")
+    print(f"Loading {FACTOR_NAME} data...")
 
     for param in PARAM_LIST:
-        for symbol in sorted(valid_symbol_set):
-            _run_and_save(symbol, [symbol], market_data_path, param)
-
+        _run_and_save("ALL", sorted(valid_symbol_set), market_data_path, param)
         for sector in sorted(valid_info['sector'].dropna().unique().tolist()):
             sector_symbols = valid_info[valid_info['sector'] == sector]['ts_code'].tolist()
             _run_and_save(sector, sector_symbols, market_data_path, param)
@@ -119,3 +108,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
