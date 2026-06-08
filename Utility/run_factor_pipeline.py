@@ -1,0 +1,206 @@
+"""Batch runner for factor generation -> signal processing -> evaluation.
+
+Config-only usage:
+- Edit PIPELINE_CONFIG in this file.
+- Run: python Utility/run_factor_pipeline.py
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import subprocess
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+FACTOR_DIR = ROOT_DIR / "Factor"
+UTILITY_DIR = ROOT_DIR / "Utility"
+SIGNAL_PROCESS_SCRIPT = UTILITY_DIR / "signalProcess.py"
+FACTOR_EVAL_SCRIPT = UTILITY_DIR / "factorEvaluation.py"
+
+PIPELINE_CONFIG = {
+    "factors": ['TrendMomentum_DonchianChannel'],
+    "n_list": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120],
+    "custom_symbols": ['CF.ZCE', 'SR.ZCE'],
+    "sector_list": [],
+    "run_all": False,
+    "run_custom_symbols": True,
+    "excluded_symbols": [],
+    "stop_on_error": False,
+}
+
+
+def _load_module(module_path: Path):
+    spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load module: {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _apply_factor_overrides(
+    module,
+    n_list: list[int],
+    sector_list: list[str],
+    custom_symbols: list[str],
+    excluded_symbols: list[str],
+) -> None:
+    if n_list and hasattr(module, "N_LIST") and not hasattr(module, "PARAM_LIST"):
+        module.N_LIST = list(dict.fromkeys(n_list))
+
+    if hasattr(module, "SECTOR_LIST"):
+        module.SECTOR_LIST = list(dict.fromkeys(sector_list))
+
+    if not custom_symbols:
+        pass
+    else:
+        module.CUSTOM_GROUPS = [
+            {
+                "name": "CustomSymbols",
+                "symbols": list(dict.fromkeys(custom_symbols)),
+            }
+        ]
+
+    if excluded_symbols:
+        module.EXCLUDED_SYMBOLS = list(dict.fromkeys(excluded_symbols))
+
+
+def _run_one_factor(
+    script_path: Path,
+    n_list: list[int],
+    sector_list: list[str],
+    custom_symbols: list[str],
+    run_all: bool,
+    run_custom_symbols: bool,
+    excluded_symbols: list[str],
+) -> None:
+    module = _load_module(script_path)
+    _apply_factor_overrides(module, n_list, sector_list, custom_symbols, excluded_symbols)
+
+    # Prefer config-driven execution path for template-based factor scripts.
+    if all(hasattr(module, name) for name in ["_run_and_save", "FACTOR_NAME", "_safe_name"]):
+        info_path = ROOT_DIR / "Info.csv"
+        info = pd.read_csv(info_path, encoding="utf-8-sig")
+
+        excluded_sectors = [s.lower() for s in getattr(module, "EXCLUDED_SECTORS", [])]
+        valid_info = info[~info["sector"].str.lower().isin(excluded_sectors)]
+        excluded_symbol_list = getattr(module, "EXCLUDED_SYMBOLS", [])
+        if excluded_symbol_list:
+            valid_info = valid_info[~valid_info["ts_code"].isin(excluded_symbol_list)]
+
+        valid_symbol_set = set(valid_info["ts_code"].tolist())
+        market_data_path = "./main_contract/"
+        print(f"Loading {module.FACTOR_NAME} data...")
+
+        if hasattr(module, "PARAM_LIST"):
+            params = list(module.PARAM_LIST)
+        elif hasattr(module, "N_LIST"):
+            params = list(module.N_LIST)
+        else:
+            raise AttributeError(f"{script_path.name} has neither N_LIST nor PARAM_LIST")
+
+        for param in params:
+            if run_all:
+                module._run_and_save("ALL", sorted(valid_symbol_set), market_data_path, param)
+
+            if sector_list:
+                for sector in sector_list:
+                    sector_symbols = valid_info[valid_info["sector"] == sector]["ts_code"].tolist()
+                    if sector_symbols:
+                        module._run_and_save(sector, sector_symbols, market_data_path, param)
+
+            if run_custom_symbols:
+                for group in getattr(module, "CUSTOM_GROUPS", []):
+                    raw_symbols = group.get("symbols", [])
+                    if isinstance(raw_symbols, str):
+                        raw_symbols = [raw_symbols]
+                    group_symbols = sorted(set(s for s in raw_symbols if s in valid_symbol_set))
+                    merged_name = "_".join(group_symbols) if group_symbols else group.get("name", "CustomGroup")
+                    module._run_and_save(merged_name, group_symbols, market_data_path, param)
+        return
+
+    if not hasattr(module, "main"):
+        raise AttributeError(f"{script_path.name} has no main()")
+    module.main()
+
+
+def _run_python_script(script_path: Path) -> None:
+    cmd = [sys.executable, str(script_path)]
+    subprocess.run(cmd, cwd=str(ROOT_DIR), check=True)
+
+
+def main() -> None:
+    factors = PIPELINE_CONFIG["factors"]
+    n_list = PIPELINE_CONFIG["n_list"]
+    sector_list = PIPELINE_CONFIG["sector_list"]
+    custom_symbols = PIPELINE_CONFIG["custom_symbols"]
+    run_all = PIPELINE_CONFIG["run_all"]
+    run_custom_symbols = PIPELINE_CONFIG["run_custom_symbols"]
+    excluded_symbols = PIPELINE_CONFIG["excluded_symbols"]
+    stop_on_error = PIPELINE_CONFIG["stop_on_error"]
+
+    if not FACTOR_DIR.exists():
+        raise FileNotFoundError(f"Factor directory not found: {FACTOR_DIR}")
+    if not SIGNAL_PROCESS_SCRIPT.exists():
+        raise FileNotFoundError(f"signalProcess script not found: {SIGNAL_PROCESS_SCRIPT}")
+    if not FACTOR_EVAL_SCRIPT.exists():
+        raise FileNotFoundError(f"factorEvaluation script not found: {FACTOR_EVAL_SCRIPT}")
+
+    factor_scripts = sorted(path for path in FACTOR_DIR.glob("*.py") if path.is_file())
+    requested = {name.strip() for name in factors if name.strip()}
+
+    selected_scripts: list[Path] = []
+    if not requested:
+        selected_scripts = factor_scripts
+    else:
+        for script_path in factor_scripts:
+            module = _load_module(script_path)
+            if script_path.stem in requested or getattr(module, "FACTOR_NAME", "") in requested:
+                selected_scripts.append(script_path)
+
+    if not selected_scripts:
+        requested_text = ", ".join(factors) if factors else "<none>"
+        raise ValueError(f"No factor scripts matched requested names: {requested_text}")
+
+    print(f"Selected factors: {len(selected_scripts)}")
+    failed: list[str] = []
+
+    for idx, script_path in enumerate(selected_scripts, start=1):
+        print(f"[Factor {idx}/{len(selected_scripts)}] Running {script_path.stem} ...")
+        try:
+            _run_one_factor(
+                script_path,
+                n_list,
+                sector_list,
+                custom_symbols,
+                run_all,
+                run_custom_symbols,
+                excluded_symbols,
+            )
+        except Exception as exc:
+            msg = f"{script_path.name}: {exc}"
+            failed.append(msg)
+            print(f"Failed: {msg}")
+            if stop_on_error:
+                raise
+
+    if failed:
+        print("Some factor scripts failed:")
+        for item in failed:
+            print(f"  - {item}")
+
+    print("Running signalProcess ...")
+    _run_python_script(SIGNAL_PROCESS_SCRIPT)
+
+    print("Running factorEvaluation ...")
+    _run_python_script(FACTOR_EVAL_SCRIPT)
+
+    print("Pipeline finished")
+
+
+if __name__ == "__main__":
+    main()

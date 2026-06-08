@@ -28,6 +28,10 @@ CUSTOM_GROUPS = [
 ]
 
 
+RUN_ALL = True
+SECTOR_LIST = []  # Empty means skip by-sector
+RUN_CUSTOM_SYMBOLS = True
+
 def _safe_name(text):
     return ''.join(ch for ch in str(text) if ch.isalnum() or ch in ['_', '-', '.'])
 
@@ -92,20 +96,30 @@ def main():
     print(f"Loading {FACTOR_NAME} data...")
 
     for param in PARAM_LIST:
-        _run_and_save("ALL", sorted(valid_symbol_set), market_data_path, param)
-        for sector in sorted(valid_info['sector'].dropna().unique().tolist()):
-            sector_symbols = valid_info[valid_info['sector'] == sector]['ts_code'].tolist()
-            _run_and_save(sector, sector_symbols, market_data_path, param)
+        if RUN_ALL:
+            _run_and_save("ALL", sorted(valid_symbol_set), market_data_path, param)
+        if SECTOR_LIST:
+            for sector in SECTOR_LIST:
+                sector_symbols = valid_info[valid_info['sector'] == sector]['ts_code'].tolist()
+                if sector_symbols:
+                    _run_and_save(sector, sector_symbols, market_data_path, param)
 
-        for group in CUSTOM_GROUPS:
-            raw_symbols = group.get('symbols', [])
-            if isinstance(raw_symbols, str):
-                raw_symbols = [raw_symbols]
-            group_symbols = [s for s in raw_symbols if s in valid_symbol_set]
-            group_symbols = sorted(set(group_symbols))
-            merged_name = '_'.join(group_symbols) if group_symbols else group.get('name', 'CustomGroup')
-            _run_and_save(merged_name, group_symbols, market_data_path, param)
+        if RUN_CUSTOM_SYMBOLS:
+            for group in CUSTOM_GROUPS:
+                raw_symbols = group.get('symbols', [])
+                if isinstance(raw_symbols, str):
+                    raw_symbols = [raw_symbols]
+                group_symbols = [s for s in raw_symbols if s in valid_symbol_set]
+                group_symbols = sorted(set(group_symbols))
+                merged_name = '_'.join(group_symbols) if group_symbols else group.get('name', 'CustomGroup')
+                _run_and_save(merged_name, group_symbols, market_data_path, param)
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
 
