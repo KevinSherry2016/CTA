@@ -307,7 +307,6 @@ def main():
             'file_weights': {
                 'Ferrous_CrossSectional_OvernightVsIntraday_norm_Position.csv': 1.0,
                 'Ferrous_TrendMomentum_MovingAverageBias_norm_Position.csv': 1.0,
-                'Ferrous_Volume_VolumeMomentum_norm_Position.csv':0.5,
             }
         },
         {
