@@ -11,6 +11,7 @@ import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+import re
 
 import pandas as pd
 
@@ -20,14 +21,17 @@ FACTOR_DIR = ROOT_DIR / "Factor"
 UTILITY_DIR = ROOT_DIR / "Utility"
 SIGNAL_PROCESS_SCRIPT = UTILITY_DIR / "signalProcess.py"
 FACTOR_EVAL_SCRIPT = UTILITY_DIR / "factorEvaluation.py"
+SUMMARY_METRICS_PATH = ROOT_DIR / "Evaluate" / "all_metrics_summary.csv"
 
 PIPELINE_CONFIG = {
-    "factors": ['TrendMomentum_DonchianChannel'],
-    "n_list": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120],
-    "custom_symbols": ['CF.ZCE', 'SR.ZCE'],
-    "sector_list": [],
-    "run_all": False,
-    "run_custom_symbols": True,
+    "factors": [],
+    "n_list": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100],
+    # "n_list": [10,20,30],
+    "backtest_start_date": 20180101,
+    "custom_symbols": [],
+    "sector_list": ['Energy','Agriculture','Ferrous','Precious','NonFerrous'],
+    "run_all": True,
+    "run_custom_symbols": False,
     "excluded_symbols": [],
     "stop_on_error": False,
 }
@@ -45,12 +49,15 @@ def _load_module(module_path: Path):
 def _apply_factor_overrides(
     module,
     n_list: list[int],
+    backtest_start_date: str,
     sector_list: list[str],
     custom_symbols: list[str],
     excluded_symbols: list[str],
 ) -> None:
     if n_list and hasattr(module, "N_LIST") and not hasattr(module, "PARAM_LIST"):
         module.N_LIST = list(dict.fromkeys(n_list))
+
+    module.BACKTEST_START_DATE = str(backtest_start_date)
 
     if hasattr(module, "SECTOR_LIST"):
         module.SECTOR_LIST = list(dict.fromkeys(sector_list))
@@ -72,6 +79,7 @@ def _apply_factor_overrides(
 def _run_one_factor(
     script_path: Path,
     n_list: list[int],
+    backtest_start_date: str,
     sector_list: list[str],
     custom_symbols: list[str],
     run_all: bool,
@@ -79,7 +87,14 @@ def _run_one_factor(
     excluded_symbols: list[str],
 ) -> None:
     module = _load_module(script_path)
-    _apply_factor_overrides(module, n_list, sector_list, custom_symbols, excluded_symbols)
+    _apply_factor_overrides(
+        module,
+        n_list,
+        backtest_start_date,
+        sector_list,
+        custom_symbols,
+        excluded_symbols,
+    )
 
     # Prefer config-driven execution path for template-based factor scripts.
     if all(hasattr(module, name) for name in ["_run_and_save", "FACTOR_NAME", "_safe_name"]):
@@ -128,9 +143,129 @@ def _run_one_factor(
     module.main()
 
 
-def _run_python_script(script_path: Path) -> None:
+def _run_python_script(
+    script_path: Path,
+    script_args: list[str] | None = None,
+) -> None:
     cmd = [sys.executable, str(script_path)]
+    if script_args:
+        cmd.extend(script_args)
     subprocess.run(cmd, cwd=str(ROOT_DIR), check=True)
+
+
+def _collect_factor_names(factor_scripts: list[Path]) -> list[str]:
+    names: set[str] = set()
+    for script_path in factor_scripts:
+        names.add(script_path.stem)
+        try:
+            module = _load_module(script_path)
+            factor_name = getattr(module, "FACTOR_NAME", "")
+            if isinstance(factor_name, str) and factor_name:
+                names.add(factor_name)
+        except Exception:
+            continue
+    return sorted(names, key=len, reverse=True)
+
+
+def _parse_strategy_file(
+    strategy_file: str,
+    factor_names: list[str],
+    sector_names_lower: set[str],
+) -> dict[str, str]:
+    stem = Path(strategy_file).stem
+    if stem.endswith("_Position"):
+        stem = stem[: -len("_Position")]
+
+    parts = stem.split("_")
+    if len(parts) < 3:
+        return {
+            "因子名称": stem,
+            "回测品种": "自定义品种",
+            "参数": "",
+            "信号方式": "",
+        }
+
+    signal_token = parts[-1]
+    param_token = parts[-2]
+    prefix = "_".join(parts[:-2])
+
+    factor_name = ""
+    target_name = ""
+    for candidate in factor_names:
+        if prefix == candidate:
+            factor_name = candidate
+            target_name = ""
+            break
+        if prefix.startswith(candidate + "_"):
+            factor_name = candidate
+            target_name = prefix[len(candidate) + 1 :]
+            break
+
+    if not factor_name:
+        factor_name = prefix
+
+    target_lower = target_name.lower()
+    if target_lower == "all":
+        instrument_group = "all"
+    elif target_lower in sector_names_lower:
+        instrument_group = "sector"
+    else:
+        instrument_group = "自定义品种"
+
+    signal_map = {
+        "RAW": "raw",
+        "ZSCORE": "zscore",
+        "STATE_MACHINE": "state_machine",
+        "TANH": "tanh",
+    }
+    signal_method = signal_map.get(signal_token.upper(), signal_token.lower())
+
+    if not re.match(r"^N\d+$", param_token.upper()):
+        param_token = param_token
+
+    return {
+        "因子名称": factor_name,
+        "回测品种": instrument_group,
+        "参数": param_token,
+        "信号方式": signal_method,
+    }
+
+
+def _split_summary_first_column(summary_path: Path, factor_scripts: list[Path]) -> None:
+    if not summary_path.exists():
+        print(f"Summary file not found, skip split: {summary_path}")
+        return
+
+    df = pd.read_csv(summary_path, encoding="utf-8-sig")
+    if "strategyFile" not in df.columns:
+        print("Column strategyFile not found, skip split.")
+        return
+
+    info = pd.read_csv(ROOT_DIR / "Info.csv", encoding="utf-8-sig")
+    sector_names_lower = set(info["sector"].dropna().astype(str).str.lower().tolist())
+    factor_names = _collect_factor_names(factor_scripts)
+
+    expected_columns = ["因子名称", "回测品种", "参数", "信号方式"]
+    if set(expected_columns).issubset(df.columns):
+        ordered = expected_columns + [c for c in df.columns if c not in set(expected_columns)]
+        df = df[ordered]
+        df.to_csv(summary_path, index=False, encoding="utf-8-sig")
+        print(f"Summary already split, columns reordered: {summary_path}")
+        return
+
+    parsed_rows = [
+        _parse_strategy_file(str(name), factor_names, sector_names_lower)
+        for name in df["strategyFile"].astype(str).tolist()
+    ]
+    parsed_df = pd.DataFrame(parsed_rows)
+
+    merged = pd.concat([parsed_df, df], axis=1)
+    ordered = ["因子名称", "回测品种", "参数", "信号方式"] + [
+        c for c in merged.columns if c not in {"因子名称", "回测品种", "参数", "信号方式"}
+    ]
+    merged = merged[ordered]
+    merged.to_csv(summary_path, index=False, encoding="utf-8-sig")
+    print(f"Split summary columns written: {summary_path}")
 
 
 def main() -> None:
@@ -142,6 +277,7 @@ def main() -> None:
     run_custom_symbols = PIPELINE_CONFIG["run_custom_symbols"]
     excluded_symbols = PIPELINE_CONFIG["excluded_symbols"]
     stop_on_error = PIPELINE_CONFIG["stop_on_error"]
+    backtest_start_date = str(PIPELINE_CONFIG["backtest_start_date"])
 
     if not FACTOR_DIR.exists():
         raise FileNotFoundError(f"Factor directory not found: {FACTOR_DIR}")
@@ -175,6 +311,7 @@ def main() -> None:
             _run_one_factor(
                 script_path,
                 n_list,
+                backtest_start_date,
                 sector_list,
                 custom_symbols,
                 run_all,
@@ -198,6 +335,9 @@ def main() -> None:
 
     print("Running factorEvaluation ...")
     _run_python_script(FACTOR_EVAL_SCRIPT)
+
+    print("Formatting all_metrics_summary ...")
+    _split_summary_first_column(SUMMARY_METRICS_PATH, factor_scripts)
 
     print("Pipeline finished")
 

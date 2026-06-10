@@ -8,7 +8,8 @@ import pandas as pd
 import numpy as np
 import os
 
-FACTOR_NAME = 'CrossSectional_OvernightVsIntraday'
+
+BACKTEST_START_DATE = '20100101'
 N_LIST = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120]
 EXCLUDED_SECTORS = ['Bond', 'StockIndex', 'Other', 'Others', 'Financial']
 EXCLUDED_SYMBOLS = []
@@ -23,6 +24,10 @@ CUSTOM_GROUPS = [
 RUN_ALL = True
 SECTOR_LIST = []  # Empty means skip by-sector
 RUN_CUSTOM_SYMBOLS = True
+
+
+def _factor_name():
+    return os.path.splitext(os.path.basename(__file__))[0]
 
 def _safe_name(text):
     return ''.join(ch for ch in str(text) if ch.isalnum() or ch in ['_', '-', '.'])
@@ -66,13 +71,14 @@ def _run_and_save(target_name, symbols, market_data_path, n_value):
         return
 
     signals = pd.DataFrame(position_series).sort_index().fillna(0).astype(float)
+    signals = signals[signals.index >= str(BACKTEST_START_DATE)]
 
-    raw_output_name = f"{FACTOR_NAME}_{_safe_name(target_name)}_{_param_str(n_value)}_RAW_Position.csv"
+    raw_output_name = f"{_factor_name()}_{_safe_name(target_name)}_{_param_str(n_value)}_RAW_Position.csv"
     raw_output_path = os.path.join('./Result', raw_output_name)
     signals.to_csv(raw_output_path, encoding='utf-8-sig')
 
 
-    print(f"Factor {FACTOR_NAME} output saved: {raw_output_path}")
+    print(f"Factor {_factor_name()} output saved: {raw_output_path}")
 
 
 def main():
@@ -85,7 +91,7 @@ def main():
         valid_info = valid_info[~valid_info['ts_code'].isin(EXCLUDED_SYMBOLS)]
     valid_symbol_set = set(valid_info['ts_code'].tolist())
 
-    print(f"Loading {FACTOR_NAME} data...")
+    print(f"Loading {_factor_name()} data...")
 
     for n_value in N_LIST:
         if RUN_ALL:
@@ -108,6 +114,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 

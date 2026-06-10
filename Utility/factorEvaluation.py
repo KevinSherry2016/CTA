@@ -1,5 +1,6 @@
-import os
+import argparse
 from pathlib import Path
+import importlib.util
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -11,13 +12,95 @@ RESULT_DIR = BASE_DIR.parent / 'Result'
 OUTPUT_DIR = BASE_DIR.parent / 'Evaluate'
 MARKET_DATA_PATH = BASE_DIR.parent / 'main_contract'
 INFO_PATH = BASE_DIR.parent / 'Info.csv'
-NORM_START_DATE = '20150101'
-NORM_END_DATE = '20201231'
+FACTOR_DIR = BASE_DIR.parent / 'Factor'
+NORM_START_DATE = '20200101'
+NORM_END_DATE = '20251231'
 SUMMARY_METRICS_CSV = 'all_metrics_summary.csv'
 CLOSE_CACHE = {}
 MAIN_CONTRACT_CACHE = {}
 VOL_WINDOW = 20
 POSITION_EWM_SPAN = 10
+
+
+def _load_module(module_path):
+    spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        return None
+    return module
+
+
+def _collect_factor_names():
+    names = set()
+    for script_path in FACTOR_DIR.glob('*.py'):
+        names.add(script_path.stem)
+        module = _load_module(script_path)
+        if module is None:
+            continue
+        factor_name = getattr(module, 'FACTOR_NAME', '')
+        if isinstance(factor_name, str) and factor_name:
+            names.add(factor_name)
+    return sorted(names, key=len, reverse=True)
+
+
+def _parse_strategy_file(strategy_file, factor_names, sector_names_lower):
+    stem = Path(strategy_file).stem
+    if stem.endswith('_Position'):
+        stem = stem[:-len('_Position')]
+
+    parts = stem.split('_')
+    if len(parts) < 3:
+        return {
+            '因子名称': stem,
+            '回测品种': '自定义品种',
+            '参数': '',
+            '信号方式': '',
+        }
+
+    signal_token = parts[-1]
+    param_token = parts[-2]
+    prefix = '_'.join(parts[:-2])
+
+    factor_name = ''
+    target_name = ''
+    for candidate in factor_names:
+        if prefix == candidate:
+            factor_name = candidate
+            target_name = ''
+            break
+        if prefix.startswith(candidate + '_'):
+            factor_name = candidate
+            target_name = prefix[len(candidate) + 1:]
+            break
+
+    if not factor_name:
+        factor_name = prefix
+
+    target_lower = target_name.lower()
+    if target_lower == 'all':
+        backtest_type = 'all'
+    elif target_lower in sector_names_lower:
+        backtest_type = 'sector'
+    else:
+        backtest_type = '自定义品种'
+
+    signal_method = {
+        'RAW': 'raw',
+        'ZSCORE': 'zscore',
+        'STATE_MACHINE': 'state_machine',
+        'TANH': 'tanh',
+    }.get(signal_token.upper(), signal_token.lower())
+
+    return {
+        '因子名称': factor_name,
+        '回测品种': backtest_type,
+        '参数': param_token,
+        '信号方式': signal_method,
+    }
 
 
 def load_positions(position_csv_path):
@@ -193,8 +276,9 @@ def collect_position_csv_files(result_dir):
     return sorted(result_dir.glob('*_Position.csv'))
 
 
-def evaluate_one_position_file(position_csv_path, info):
+def evaluate_one_position_file(position_csv_path, info, factor_names, sector_names_lower):
     positions = load_positions(position_csv_path)
+
     trading_days = positions.index.tolist()
     symbols = positions.columns.tolist()
     close_df = load_close_data(symbols, trading_days)
@@ -240,7 +324,9 @@ def evaluate_one_position_file(position_csv_path, info):
     plot_path = OUTPUT_DIR / f'{output_prefix}_cumulativePnl.png'
     plot_pnl(trade_dates, norm_daily_pnl, norm_pnl_per_asset, metrics, plot_path)
 
+    parsed = _parse_strategy_file(position_csv_path.name, factor_names, sector_names_lower)
     metrics_row = {
+        **parsed,
         'strategyFile': position_csv_path.name,
         'scale': scale,
         'sharpeRatio': metrics['sharpeRatio'],
@@ -257,6 +343,9 @@ def main():
     info = pd.read_csv(INFO_PATH, encoding='utf-8-sig')
     if 'ts_code' not in info.columns or 'sector' not in info.columns:
         raise ValueError('Info.csv 必须包含 ts_code 和 sector 列。')
+    print(f'使用回测开始日期: {NORM_START_DATE}')
+    sector_names_lower = set(info['sector'].dropna().astype(str).str.lower().tolist())
+    factor_names = _collect_factor_names()
 
     position_files = collect_position_csv_files(RESULT_DIR)
     if not position_files:
@@ -266,7 +355,12 @@ def main():
     all_metrics = []
     for index, position_csv_path in enumerate(position_files, 1):
         try:
-            metrics_row = evaluate_one_position_file(position_csv_path, info)
+            metrics_row = evaluate_one_position_file(
+                position_csv_path,
+                info,
+                factor_names,
+                sector_names_lower,
+            )
             all_metrics.append(metrics_row)
             if index % 20 == 0 or index == len(position_files):
                 print(f'评估进度: {index}/{len(position_files)}')
@@ -277,7 +371,12 @@ def main():
         raise ValueError('所有文件评估均失败。')
 
     summary_path = OUTPUT_DIR / SUMMARY_METRICS_CSV
-    pd.DataFrame(all_metrics).to_csv(summary_path, index=False, encoding='utf-8-sig')
+    summary_df = pd.DataFrame(all_metrics)
+    ordered_columns = ['因子名称', '回测品种', '参数', '信号方式', 'strategyFile'] + [
+        col for col in summary_df.columns if col not in {'因子名称', '回测品种', '参数', '信号方式', 'strategyFile'}
+    ]
+    summary_df = summary_df[ordered_columns]
+    summary_df.to_csv(summary_path, index=False, encoding='utf-8-sig')
     print(f'汇总指标输出完成: {summary_path}')
 
 

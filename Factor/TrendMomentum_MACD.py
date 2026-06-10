@@ -8,7 +8,8 @@ import pandas as pd
 import numpy as np
 import os
 
-FACTOR_NAME = 'TrendMomentum_MACD'
+
+BACKTEST_START_DATE = '20100101'
 PARAM_LIST = [
     {'fast_n': 6, 'slow_n': 13, 'signal_n': 5},
     {'fast_n': 8, 'slow_n': 17, 'signal_n': 9},
@@ -30,6 +31,10 @@ CUSTOM_GROUPS = [
 RUN_ALL = True
 SECTOR_LIST = []  # Empty means skip by-sector
 RUN_CUSTOM_SYMBOLS = True
+
+
+def _factor_name():
+    return os.path.splitext(os.path.basename(__file__))[0]
 
 def _safe_name(text):
     return ''.join(ch for ch in str(text) if ch.isalnum() or ch in ['_', '-', '.'])
@@ -72,13 +77,14 @@ def _run_and_save(target_name, symbols, market_data_path, param):
         return
 
     signals = pd.DataFrame(position_series).sort_index().fillna(0).astype(float)
+    signals = signals[signals.index >= str(BACKTEST_START_DATE)]
 
-    raw_output_name = f"{FACTOR_NAME}_{_safe_name(target_name)}_{_param_str(param)}_RAW_Position.csv"
+    raw_output_name = f"{_factor_name()}_{_safe_name(target_name)}_{_param_str(param)}_RAW_Position.csv"
     raw_output_path = os.path.join('./Result', raw_output_name)
     signals.to_csv(raw_output_path, encoding='utf-8-sig')
 
 
-    print(f"Factor {FACTOR_NAME} output saved: {raw_output_path}")
+    print(f"Factor {_factor_name()} output saved: {raw_output_path}")
 
 
 def main():
@@ -91,7 +97,7 @@ def main():
         valid_info = valid_info[~valid_info['ts_code'].isin(EXCLUDED_SYMBOLS)]
     valid_symbol_set = set(valid_info['ts_code'].tolist())
 
-    print(f"Loading {FACTOR_NAME} data...")
+    print(f"Loading {_factor_name()} data...")
 
     for param in PARAM_LIST:
         if RUN_ALL:
@@ -114,6 +120,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
