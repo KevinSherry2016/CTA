@@ -35,9 +35,9 @@ def _param_str(n_value):
 
 def _calc_signal(df, n_value):
     close = df['adj_close']
-    open_price = df.get('open', close)
-    high = df.get('high', close)
-    low = df.get('low', close)
+    open = df.get('adj_open', df.get('open', close))
+    high = df.get('adj_high', df.get('high', close))
+    low = df.get('adj_low', df.get('low', close))
     volume = df.get('vol', df.get('Volume', pd.Series(dtype=float, index=df.index))).astype(float)
 
     ret = close.pct_change()
@@ -45,9 +45,9 @@ def _calc_signal(df, n_value):
     vol_std = volume.rolling(window=n_value, min_periods=1).std()
     vol_z = (volume - vol_mean) / (vol_std + 1e-8)
 
-    intraday_range = (high - low) / (open_price.abs() + 1e-8)
-    body_top = np.maximum(open_price, close)
-    body_bottom = np.minimum(open_price, close)
+    intraday_range = (high - low) / (open.abs() + 1e-8)
+    body_top = np.maximum(open, close)
+    body_bottom = np.minimum(open, close)
     upper_wick = high - body_top
     lower_wick = body_bottom - low
     wick_bias = (upper_wick - lower_wick) / (high - low + 1e-8)
