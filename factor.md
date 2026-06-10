@@ -29,8 +29,8 @@
 | 成交量与持仓量 | CMF 蔡金资金流 | `money_flow_multiplier=((close-low)-(high-close))/(high-low+1e-8)`, `money_flow_volume = money_flow_multiplier * volume `,`rolling_sum(money_flow_volume)/ (rolling_sum(volume)+1e-8)`|衡量资金流入/出以及程度|
 | 成交量与持仓量 | MFI 资金流向指标 |`typical_price = (high + low + close) / 3.0`,`raw_money_flow = typical_price * volume`, `pos_sum = raw_money_flow.where(price_change > 0, 0.0).rolling().sum` , `money_flow_ratio = pos_sum/(neg_sum+1e-8)`,`mfi = 100 - 100/(1+money_flow_ratio)`，`(mfi - 50) / 50`|因子值在[-1,1]|
 | 成交量与持仓量 | OBV 能量潮 | `obv = cumsum(sign(ret) * volume)`,`obv / obv.rolling(window=N).mean() - 1`||
-| 成交量与持仓量 | 持仓量变化率 | `oi / oi.shift(N) - 1`| 需要注意换月|
-| 成交量与持仓量 | 价格持仓量背离 | `price_ret = close.pct_change(N)`，`oi_change = oi.pct_change(N)`,`price_ret * sign(oi_change)`（换月区间置空后前向填充） |换月处理对结果影响较大|
+| 成交量与持仓量 | 价格持仓量背离 | `price_ret = close.pct_change(N)`，`oi_change = oi.pct_change(N)`,`price_ret * sign(oi_change)`||
+ 成交量与持仓量 | 持仓量变化率 | `oi / oi.shift(N) - 1`| |
 | 成交量与持仓量 | 价量相关性 |`daily_ret = close.pct_change()`，`vol_chg = volume.pct_change()`, `daily_ret.rolling(window=N).corr(vol_chg)` |因子绝对值越大，代表量价联动性越强|
-| 成交量与持仓量 | 成交量动量 | `volume / volume.rolling(N).mean() - 1`|需要注意换月|
+| 成交量与持仓量 | 成交量动量 | `volume / volume.rolling(N).mean() - 1`||
 | 成交量与持仓量 | 价格-持仓流向 | `ret = close.pct_change()`，`oi_chg = oi.pct_change()`，`flow = sign(ret)*oi_chg`，`flow.rolling(N).mean()` | 结合方向与持仓变化，区别于单独 OI 变化率 |

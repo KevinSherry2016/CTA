@@ -35,15 +35,9 @@ def _param_str(n_value):
 def _calc_signal(df, n_value):
     close = df['adj_close']
     oi = df.get('oi', df.get('OpenInterest', pd.Series(dtype=float)))
-    raw_close = df.get('close', close)
-    adj_factor = close / raw_close.replace(0, np.nan)
-    is_rollover = adj_factor.diff().abs() > 1e-5
-    invalid_window = is_rollover.rolling(window=n_value, min_periods=1).max() > 0
-
     price_ret = close.pct_change(periods=n_value).fillna(0)
     oi_change = oi.pct_change(periods=n_value).fillna(0)
     signal = price_ret * np.sign(oi_change)
-    signal[invalid_window] = np.nan
     return signal.ffill()
 
 
