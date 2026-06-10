@@ -3,6 +3,7 @@
 | 截面与非对称性 | 收益率峰度 | `-ret.rolling(window=N).kurt()`|`kurt()` 为超额峰度|
 | 截面与非对称性 | 日内收益 vs 隔夜收益差异 | ``intraday_ret = close/(open+1e-9)-1`，`overnight_ret = open/(close.shift(1)+1e-9)-1`,`(intraday_ret - overnight_ret).rolling(window=N).mean()`|衡量“收益来源结构”，不是涨跌方向|
 | 截面与非对称性 | 收益率偏度 | `ret.rolling(window=N).skew()`||
+| 截面与非对称性 | 尾部收益不对称 | `ret=close.pct_change()`，`q_low=rolling_quantile(ret,N,0.2)`，`q_high=rolling_quantile(ret,N,0.8)`，`up=mean(ret[ret>=q_high],N)`，`down=abs(mean(ret[ret<=q_low],N))`，`up/(down+1e-8)-1` | 对比上尾与下尾收益贡献，刻画偏多/偏空尾部主导结构 |
 | 均值回归 | 反向噪声| `trend_dir = sign(close-close.shift(N))`，`direction = abs(close-close.shift(N))`，`volatility = rolling_sum(abs(close.diff()))`,`ker = direction/(volatility+1e-8)`,`-trend_dir * (1 - ker)` ||
 | 均值回归 | 滚动ZScore反转 | `ma = close.rolling(N).mean()`，`std = close.rolling(N).std()`，`-(close-ma)/(std+1e-8)` | 价格偏离越大，反转信号越强 |
 | 均值回归 | 短期反转 | `-close.pct_change(periods=N).fillna(0)` ||
@@ -34,3 +35,7 @@
 | 成交量与持仓量 | 价量相关性 |`daily_ret = close.pct_change()`，`vol_chg = volume.pct_change()`, `daily_ret.rolling(window=N).corr(vol_chg)` |因子绝对值越大，代表量价联动性越强|
 | 成交量与持仓量 | 成交量动量 | `volume / volume.rolling(N).mean() - 1`||
 | 成交量与持仓量 | 价格-持仓流向 | `ret = close.pct_change()`，`oi_chg = oi.pct_change()`，`flow = sign(ret)*oi_chg`，`flow.rolling(N).mean()` | 结合方向与持仓变化，区别于单独 OI 变化率 |
+| 动量与趋势 | 自适应突破强度 | `prev_high = high.shift(1).rolling(N).max()`，`prev_low = low.shift(1).rolling(N).min()`，`breakout_pos=(close-prev_low)/(prev_high-prev_low+1e-8)-0.5`，`trend_strength=EMA(close,N/2)/(EMA(close,N)+1e-8)-1`，`breakout_pos*tanh(10*trend_strength)` | 用通道突破位置叠加 EMA 趋势强度，过滤假突破 |
+| 均值回归 | 衰竭反转复合 | `ret=close.pct_change()`，`vol_z=(volume-mean(volume,N))/(std(volume,N)+1e-8)`，`intraday_range=(high-low)/(abs(open)+1e-8)`，`wick_bias=(upper_wick-lower_wick)/(high-low+1e-8)`，`-rolling_mean(ret*vol_z*(1+intraday_range)+0.5*wick_bias,N/2)` | 捕捉放量拉升/杀跌后的情绪衰竭与影线反转结构 |
+| 微观结构 | 缺口回补压力 | `gap=open/(close.shift(1)+1e-8)-1`，`intraday_ret=close/(open+1e-8)-1`，`close_location=((close-low)-(high-close))/(high-low+1e-8)`，`rolling_mean(-sign(gap)*intraday_ret*(1+close_location),N)` | 衡量跳空后是否被盘中回补，结合收盘位置判断回补力度 |
+| 成交量与持仓量 | 量仓共振 | `ret_n=close.pct_change(N)`，`vol_chg=volume.pct_change()`，`oi_chg=oi.pct_change()`，`sync=corr(oi_chg,vol_chg,N)`，`pressure=rolling_mean(oi_chg+vol_chg,N/2)`，`ret_n*sync*tanh(5*pressure)` | 当成交量与持仓变化同向且持续时，趋势可信度更高 |
