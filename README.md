@@ -150,3 +150,15 @@ other  1月大赚  之后一直亏损
 2026-06（截至当前）
 赚钱：Agriculture、Energy
 亏钱：Ferrous、NonFerrous、Precious
+
+
+
+
+
+
+1. 哪些品种/sector/all在哪些因子上比较好（趋势、均值回归）
+2. 如果某个因子特别差，有没有可能是反指（趋势、均值回归）
+3. 是否有建议去除的品种，为什么
+4. 参考当前production的情况，包括因子、参数、具体品种等，如何提升
+5. 设定一个目标，sharpRaio 3，参考production的格式，写一个出来
+注意：剔除波动率因子

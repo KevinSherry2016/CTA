@@ -25,8 +25,7 @@ SUMMARY_METRICS_PATH = ROOT_DIR / "Evaluate" / "all_metrics_summary.csv"
 
 PIPELINE_CONFIG = {
     "factors": [],
-    "n_list": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100],
-    # "n_list": [10,20,30],
+    "n_list": [10,20,30,40,50,60,70,80,90,100],
     "backtest_start_date": 20180101,
     "custom_symbols": [],
     "sector_list": ['Energy','Agriculture','Ferrous','Precious','NonFerrous'],
