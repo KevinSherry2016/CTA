@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-NORM_START_DATE = '20150101'
-NORM_END_DATE = '20201231'
+BACKTEST_START_DATE = '20180101'
+NORM_START_DATE = '20200101'
+NORM_END_DATE = '20251231'
 
 def _rollover_adjusted_turnover(pos_df, main_contract_df):
     prev_contract = main_contract_df.shift(1)
@@ -104,6 +105,10 @@ def main():
         pos_df_raw = pd.concat(pos_raw_param_list, axis=1).sort_index()
         pnl_df_raw = pd.concat(pnl_raw_param_list, axis=1).sort_index()
         daily_pnl = pnl_df_raw.sum(axis=1)
+        if BACKTEST_START_DATE:
+            pos_df_raw = pos_df_raw[pos_df_raw.index >= BACKTEST_START_DATE]
+            pnl_df_raw = pnl_df_raw[pnl_df_raw.index >= BACKTEST_START_DATE]
+            daily_pnl = daily_pnl[daily_pnl.index >= BACKTEST_START_DATE]
 
         pnl_for_scale = daily_pnl
         if NORM_START_DATE:

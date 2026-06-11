@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 import importlib.util
+import re
 import warnings
 
 import matplotlib.dates as mdates
@@ -55,53 +56,100 @@ def _collect_factor_names():
     return sorted(names, key=len, reverse=True)
 
 
+PARAM_TOKEN_RE = re.compile(r'^(?:N\d+|F\d+|S\d+|ZO\d+|ZC\d+|T\d+|ATR\d+|SLP\d+|SIG\d+)$', re.IGNORECASE)
+
+
+def _split_target_and_param(tail_tokens):
+    if not tail_tokens:
+        return '', ''
+
+    param_tokens = []
+    for token in reversed(tail_tokens):
+        if PARAM_TOKEN_RE.match(token):
+            param_tokens.append(token)
+        else:
+            break
+
+    if param_tokens:
+        param_tokens.reverse()
+        target_tokens = tail_tokens[:-len(param_tokens)]
+        return '_'.join(target_tokens), '_'.join(param_tokens)
+
+    if len(tail_tokens) == 1:
+        return '', tail_tokens[0]
+
+    return '_'.join(tail_tokens[:-1]), tail_tokens[-1]
+
+
 def _parse_strategy_file(strategy_file, factor_names, sector_names_lower):
     stem = Path(strategy_file).stem
     if stem.endswith('_Position'):
         stem = stem[:-len('_Position')]
 
-    parts = stem.split('_')
-    if len(parts) < 3:
-        return {
-            '因子名称': stem,
-            '回测品种': '自定义品种',
-            '参数': '',
-            '信号方式': '',
-        }
+    signal_map = {
+        'RAW': 'raw',
+        'ZSCORE': 'zscore',
+        'STATE_MACHINE': 'state_machine',
+        'TANH': 'tanh',
+    }
 
-    signal_token = parts[-1]
-    param_token = parts[-2]
-    prefix = '_'.join(parts[:-2])
+    signal_token = ''
+    prefix_without_signal = stem
+    for candidate in sorted(signal_map, key=len, reverse=True):
+        suffix = f'_{candidate}'
+        if stem.upper().endswith(suffix):
+            signal_token = candidate
+            prefix_without_signal = stem[:-len(suffix)]
+            break
+
+    if not signal_token:
+        parts = stem.split('_')
+        if len(parts) < 3:
+            return {
+                '因子名称': stem,
+                '回测品种': '自定义品种',
+                '参数': '',
+                '信号方式': '',
+            }
+        signal_token = parts[-1]
+        prefix_without_signal = '_'.join(parts[:-1])
 
     factor_name = ''
-    target_name = ''
+    tail_tokens = []
     for candidate in factor_names:
-        if prefix == candidate:
+        if prefix_without_signal == candidate:
             factor_name = candidate
-            target_name = ''
+            tail_tokens = []
             break
-        if prefix.startswith(candidate + '_'):
+        if prefix_without_signal.startswith(candidate + '_'):
             factor_name = candidate
-            target_name = prefix[len(candidate) + 1:]
+            suffix = prefix_without_signal[len(candidate) + 1:]
+            tail_tokens = suffix.split('_') if suffix else []
             break
 
     if not factor_name:
-        factor_name = prefix
+        parts = prefix_without_signal.split('_')
+        if len(parts) >= 3:
+            factor_name = '_'.join(parts[:2])
+            tail_tokens = parts[2:]
+        elif len(parts) >= 2:
+            factor_name = '_'.join(parts[:2])
+            tail_tokens = []
+        else:
+            factor_name = prefix_without_signal
+            tail_tokens = []
+
+    target_name, param_token = _split_target_and_param(tail_tokens)
 
     target_lower = target_name.lower()
     if target_lower == 'all':
         backtest_type = 'all'
     elif target_lower in sector_names_lower:
-        backtest_type = 'sector'
+        backtest_type = target_name
     else:
-        backtest_type = '自定义品种'
+        backtest_type = target_name or '自定义品种'
 
-    signal_method = {
-        'RAW': 'raw',
-        'ZSCORE': 'zscore',
-        'STATE_MACHINE': 'state_machine',
-        'TANH': 'tanh',
-    }.get(signal_token.upper(), signal_token.lower())
+    signal_method = signal_map.get(signal_token.upper(), signal_token.lower())
 
     return {
         '因子名称': factor_name,

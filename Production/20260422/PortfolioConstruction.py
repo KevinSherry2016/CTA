@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-NORM_START_DATE = '20150101'
-NORM_END_DATE = '20201231'
+NORM_START_DATE = '20200101'
+NORM_END_DATE = '20251231'
 
 def _rollover_adjusted_turnover(pos_df, main_contract_df):
     prev_contract = main_contract_df.shift(1)
@@ -29,7 +29,7 @@ def convert_simple_to_compound(file_path, output_path, start_date=None, target_v
     参数:
     file_path: 输入的单利PnL csv文件路径
     output_path: 输出的复合净值 csv文件路径
-    start_date: 开始计算的日期，格式为字符串 'YYYYMMDD'，如 '20150101'。如果为None，则从第一天开始。
+    start_date: 开始计算的日期，格式为字符串 'YYYYMMDD'，如 '20200101'。如果为None，则从第一天开始。
     target_volatility: 目标的年化波动率参数，默认 0.16（即 16%）。若设为 0.20，日收益会扩大 20%/16% 倍。
     divisor: 如果PnL是百分比（如 4.06 代表 4.06%），则使用 100。
              如果PnL已经是小数形式（如 0.0406 代表 4.06%），则使用 1。
@@ -356,8 +356,8 @@ def main():
             'output_name': 'L3_Final',
             'type': 'merge',
             'file_weights': {
-                'L3_Sector_Merge_All_norm_Position.csv': 50,
-                'L3_Sector_Merge_All_DeltaNeutral_norm_Position.csv': 100,
+                'L3_Sector_Merge_All_norm_Position.csv': 1.0,
+                'L3_Sector_Merge_All_DeltaNeutral_norm_Position.csv': 1.0,
             }
         },
     ]
