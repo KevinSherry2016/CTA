@@ -1,10 +1,18 @@
 import argparse
 from pathlib import Path
 import importlib.util
+import warnings
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+
+
+warnings.filterwarnings(
+    'ignore',
+    message=r"Downcasting behavior in `replace` is deprecated and will be removed in a future version.*",
+    category=FutureWarning,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -160,7 +168,11 @@ def apply_risk_parity_scaling(positions, close_df, vol_window=20):
 
     aligned_positions = positions.reindex(index=close_df.index, columns=close_df.columns).fillna(0.0)
     scaled_positions = aligned_positions.divide(rolling_vol.replace(0, pd.NA))
-    return scaled_positions.replace([pd.NA, float('inf'), float('-inf')], 0.0).fillna(0.0)
+    return (
+        scaled_positions.replace([pd.NA, float('inf'), float('-inf')], 0.0)
+        .infer_objects(copy=False)
+        .fillna(0.0)
+    )
 
 
 def smooth_positions(positions, ewm_span=10):
