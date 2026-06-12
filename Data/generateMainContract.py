@@ -103,8 +103,10 @@ def calculate_main_contract(ts_code_list, start_date='20100101', end_date=dateti
 
             sub_mapping_ts_code = None
             sub_row_dict = {}
-            if len(contracts) > 1:
-                sub_row = contracts.iloc[1]
+            # 次主力要求到期晚于主力：在OI排序后，选第一个 delivery_ym > main_ym 的合约
+            sub_candidates = contracts[contracts['delivery_ym'].apply(lambda ym: ym > main_ym)]
+            if not sub_candidates.empty:
+                sub_row = sub_candidates.iloc[0]
                 sub_mapping_ts_code = sub_row['ts_code']
                 for col in sub_row.index:
                     if col not in ['ts_code', 'trade_date', 'delivery_ym']:
