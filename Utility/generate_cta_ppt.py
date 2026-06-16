@@ -299,7 +299,6 @@ def slide_process(prs: Presentation):
         title_size=16,
         body_size=12,
     )
-    add_callout(slide, 0.75, 6.25, 12.0, 0.42, "流程稳定性 = 数据稳定性 + 模型稳定性 + 执行稳定性", LIGHT_BLUE, NAVY)
     add_footer(slide, 2)
 
 
@@ -326,7 +325,6 @@ def slide_data(prs: Presentation):
         "用途：补充传统数据难覆盖的数据，同时覆盖了各类事件扰动与市场预期变化",
         "更新频率：日/周/月/季/年都覆盖",
     ], accent=GOLD, title_size=19, body_size=13)
-    add_callout(slide, 0.82, 6.7, 11.9, 0.45, "数据不是越多越好，而是要覆盖不同市场状态，并可持续验证有效性。", LIGHT_BLUE, NAVY)
     add_footer(slide, 3)
 
 
@@ -356,7 +354,6 @@ def slide_factors(prs: Presentation):
         "适配性：适合突发事件驱动或常规信号拥挤阶段",
         "特点：噪声较高，需先做清洗和验证，再进入生产流程",
     ], accent=GOLD, fill_color=LIGHT_GOLD)
-    add_callout(slide, 0.8, 6.25, 11.9, 0.42, "推荐做法：主因子负责稳定收益，增量因子负责提升边际收益。", LIGHT_BLUE, NAVY)
     add_footer(slide, 4)
 
 
@@ -479,7 +476,6 @@ def slide_evaluation(prs: Presentation):
         inv_mo = etree.SubElement(ser_el_mo, qn('c:invertIfNegative'))
     inv_mo.set('val', '0')
 
-    add_callout(slide, 0.65, 6.55, 12.0, 0.42, "评估原则：先看稳定性，再看收益弹性，最后看可交易性。", LIGHT_BLUE, NAVY)
     add_footer(slide, 5)
 
 
@@ -513,7 +509,7 @@ def slide_incremental_evaluation(prs: Presentation):
     ])
     chart = slide.shapes.add_chart(
         XL_CHART_TYPE.LINE,
-        Inches(1.77), Inches(1.75), Inches(9.80), Inches(2.45),
+        Inches(2.55), Inches(1.6), Inches(8.25), Inches(2.75),
         chart_data,
     ).chart
     chart.has_title = True
@@ -528,30 +524,57 @@ def slide_incremental_evaluation(prs: Presentation):
     style_line_series(chart.series[0], BLUE, 3.0)
     style_line_series(chart.series[1], RED, 3.0)
 
-    # 盘中（日内）平均走势：21:00 夜盘开盘 -> 次日 15:00 日盘收盘
-    intraday = CategoryChartData()
-    intraday.categories = [
+    # 盘中（日内）平均走势：用 matplotlib 画真正垂直阶跃曲线，插入为图片
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    import io
+
+    times = [
         "21:00", "21:30", "22:00", "22:30", "23:00", "23:30",
         "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
         "13:30", "14:00", "14:30", "15:00",
     ]
-    intraday.add_series("平均PnL", [
-        0.45, 0.47, 0.46, 0.49, 0.48, 0.52,
-        1.10, 1.13, 1.12, 1.16, 1.15, 1.19,
-        1.21, 1.24, 1.23, 1.27,
-    ])
-    c_intra = slide.shapes.add_chart(
-        XL_CHART_TYPE.LINE,
-        Inches(1.77), Inches(4.45), Inches(9.80), Inches(1.65),
-        intraday,
-    ).chart
-    c_intra.has_title = True
-    c_intra.chart_title.text_frame.text = "PnL 日内平均走势"
-    c_intra.has_legend = False
-    c_intra.value_axis.has_major_gridlines = False
-    c_intra.category_axis.tick_labels.font.size = Pt(8)
-    c_intra.value_axis.tick_labels.font.size = Pt(8)
-    style_line_series(c_intra.series[0], GOLD, 2.8)
+    # 基础平稳值；21:00索引0和09:00索引6处做垂直跳跃
+    base = [0.02, 0.28, 0.30, 0.29, 0.32, 0.34,
+            0.35, 0.62, 0.61, 0.64, 0.63, 0.67,
+            0.69, 0.72, 0.71, 0.75]
+
+    fig, ax = plt.subplots(figsize=(9.5, 1.5))
+    xs = list(range(len(times)))
+
+    # 画平稳段：逐段绘制，在跳跃点画垂直线
+    jump_indices = {0: (0.02, 0.25), 6: (0.34, 0.58)}
+    prev_y = base[0]
+    for i in range(len(times)):
+        if i in jump_indices:
+            lo, hi = jump_indices[i]
+            # 垂直线
+            ax.plot([i, i], [lo, hi], color='#AC7626', linewidth=2.0)
+            prev_y = hi
+        if i < len(times) - 1:
+            next_y = base[i + 1] if (i + 1) not in jump_indices else jump_indices[i + 1][0]
+            ax.plot([i, i + 1], [prev_y, next_y], color='#AC7626', linewidth=2.0)
+            prev_y = next_y
+
+    ax.set_xticks(xs)
+    ax.set_xticklabels(times, fontsize=7, rotation=30, ha='right')
+    ax.set_ylabel("PnL", fontsize=8)
+    ax.set_title("Intraday Average PnL", fontsize=9, pad=4)
+    ax.set_ylim(-0.05, 1.35)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.tick_params(axis='y', labelsize=7)
+    ax.yaxis.grid(False)
+    fig.tight_layout(pad=0.3)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+
+    slide.shapes.add_picture(buf, Inches(2.55), Inches(4.55), Inches(8.25), Inches(1.95))
 
     add_footer(slide, 6)
 
@@ -563,26 +586,25 @@ def slide_portfolio(prs: Presentation):
     add_title(slide, "投资组合", "组合不是简单叠加高Sharpe因子，而是在相关性约束下实现稳定输出")
 
     add_card(slide, 0.7, 1.8, 4.15, 4.9, "核心原则", [
-        "先做波动率标准化，再进行权重合成。",
-        "新增因子需与现有组合保持低相关。",
-        "评估标准不是单腿收益，而是整体组合增益。",
-        "控制单策略权重上限，避免局部信号主导全组合。",
-    ], accent=BLUE)
+        "波动率标准化后再合成权重",
+        "新因子与现有组合须保持低相关",
+        "评估标准是整体组合增益，而非单腿收益",
+        "单策略权重设上限，防止局部主导",
+    ], accent=BLUE, body_size=13)
 
-    add_card(slide, 4.95, 1.8, 3.75, 4.9, "组合结构建议", [
-        "趋势：捕捉主线行情。",
-        "反转：补足震荡阶段收益。",
-        "另类：提供增量信息。",
-        "按Sector与品种分层配置，避免一刀切。",
-        "按月复核风格暴露，避免组合漂移。",
-    ], accent=TEAL)
+    add_card(slide, 4.95, 1.8, 3.75, 4.9, "组合结构", [
+        "趋势类 — 捕捉主线行情",
+        "反转类 — 补足震荡阶段收益",
+        "另类类 — 提供增量信息",
+        "按Sector与品种分层配置",
+        "按月复核风格暴露",
+    ], accent=TEAL, body_size=13)
     add_card(slide, 8.85, 1.8, 3.75, 4.9, "落地判断", [
-        "优先保留参数高原，而非参数尖峰。",
-        "关注净值平滑度与回撤修复速度。",
-        "对相关性、容量与换手进行联合约束。",
-        "在同等收益下优先选择交易成本更低的组合。",
-    ], accent=GOLD)
-    add_callout(slide, 0.7, 6.25, 12.0, 0.42, "组合目标：在可控回撤前提下，持续输出可复制的超额收益。", LIGHT_BLUE, NAVY)
+        "优先参数高原，避免参数尖峰",
+        "关注净值平滑度与回撤修复速度",
+        "相关性、容量与换手联合约束",
+        "同等收益下优选低交易成本方案",
+    ], accent=GOLD, body_size=13)
     add_footer(slide, 7)
 
 
@@ -609,7 +631,7 @@ def slide_risk(prs: Presentation):
         "第三层：当某类策略持续回撤时，逐步下调该策略族权重。",
         "第四层（可选）：组合波动超阈值时，启用临时风险预算压降。",
     ], accent=NAVY)
-    add_callout(slide, 0.7, 6.25, 12.0, 0.42, "风控不是‘事后止损’，而是覆盖盘前、盘中、盘后的闭环管理。", LIGHT_BLUE, NAVY)
+
     add_footer(slide, 8)
 
 
@@ -634,7 +656,6 @@ def slide_execution(prs: Presentation):
         "保证每分钟至少一手下单，兼顾成交效率与市场存在感。",
         "实时监控成交偏差，动态调整执行节奏。",
     ], accent=GOLD)
-    add_callout(slide, 0.7, 6.35, 12.0, 0.32, "执行质量指标：成交偏离、冲击成本、完成率。", LIGHT_BLUE, NAVY)
     add_footer(slide, 9)
 
 
@@ -651,7 +672,6 @@ def slide_summary(prs: Presentation):
         "建议建立统一监控看板，贯通研究、交易、风控指标。",
         "通过流程化、标准化、可回溯的研究体系，提升策略长期稳定性与可复制性。",
     ], accent=NAVY)
-    add_callout(slide, 0.75, 6.25, 12.0, 0.42, "核心目标：在可控风险前提下，稳定输出可解释、可复制的超额收益。", LIGHT_BLUE, NAVY)
     add_footer(slide, 10)
 
 
