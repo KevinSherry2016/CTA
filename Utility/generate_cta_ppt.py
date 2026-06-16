@@ -108,7 +108,7 @@ def add_section_tag(slide, label: str, color: RGBColor = NAVY) -> None:
     p.alignment = PP_ALIGN.CENTER
 
 
-def add_card(slide, x, y, w, h, title, bullets, accent=BLUE, fill_color=CARD, title_size=18, body_size=13):
+def add_card(slide, x, y, w, h, title, bullets, accent=BLUE, fill_color=CARD, title_size=18, body_size=13, line_space=5):
     card = slide.shapes.add_shape(
         MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE,
         Inches(x),
@@ -156,8 +156,67 @@ def add_card(slide, x, y, w, h, title, bullets, accent=BLUE, fill_color=CARD, ti
         p.font.name = "Microsoft YaHei"
         p.font.size = Pt(body_size)
         p.font.color.rgb = INK
-        p.space_after = Pt(5)
         p.bullet = True
+        p.space_after = Pt(line_space)
+
+
+def add_labeled_card(slide, x, y, w, h, title, entries, accent=BLUE, fill_color=CARD, title_size=18, body_size=13, row_gap=0.16, label_w=0.95):
+    card = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE,
+        Inches(x), Inches(y), Inches(w), Inches(h),
+    )
+    card.fill.solid()
+    card.fill.fore_color.rgb = fill_color
+    card.line.color.rgb = LINE
+    card.line.width = Pt(1)
+
+    top_bar = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+        Inches(x), Inches(y), Inches(w), Inches(0.16),
+    )
+    top_bar.fill.solid()
+    top_bar.fill.fore_color.rgb = accent
+    top_bar.line.fill.background()
+
+    title_box = slide.shapes.add_textbox(Inches(x + 0.22), Inches(y + 0.28), Inches(w - 0.44), Inches(0.42))
+    tf = title_box.text_frame
+    tf.clear()
+    p = tf.paragraphs[0]
+    p.text = title
+    p.font.name = "Microsoft YaHei"
+    p.font.size = Pt(title_size)
+    p.font.bold = True
+    p.font.color.rgb = accent
+
+    start_y = y + 0.86
+    row_h = 0.68
+    for idx, (label, value) in enumerate(entries):
+        row_y = start_y + idx * row_h
+
+        label_box = slide.shapes.add_textbox(Inches(x + 0.24), Inches(row_y), Inches(label_w), Inches(0.32))
+        tf_label = label_box.text_frame
+        tf_label.word_wrap = False
+        tf_label.clear()
+        p_label = tf_label.paragraphs[0]
+        p_label.text = f"{label}："
+        p_label.font.name = "Microsoft YaHei"
+        p_label.font.size = Pt(body_size)
+        p_label.font.bold = True
+        p_label.font.color.rgb = INK
+
+        value_box = slide.shapes.add_textbox(Inches(x + 0.20 + label_w), Inches(row_y), Inches(w - label_w - 0.42), Inches(0.52 + row_gap))
+        tf_value = value_box.text_frame
+        tf_value.word_wrap = True
+        tf_value.margin_left = 0
+        tf_value.margin_right = 0
+        tf_value.margin_top = 0
+        tf_value.margin_bottom = 0
+        tf_value.clear()
+        p_value = tf_value.paragraphs[0]
+        p_value.text = value
+        p_value.font.name = "Microsoft YaHei"
+        p_value.font.size = Pt(body_size)
+        p_value.font.color.rgb = INK
 
 
 def add_callout(slide, x, y, w, h, text, fill_color=LIGHT_BLUE, font_color=NAVY):
@@ -312,19 +371,19 @@ def slide_data(prs: Presentation):
         "来源：交易所、Wind、Tushare",
         "用途：构建趋势、反转、波动率、量仓共振与微观结构类因子",
         "更新频率：覆盖毫秒级到日频",
-    ], accent=BLUE, title_size=19, body_size=13)
+    ], accent=BLUE, title_size=19, body_size=13, line_space=8)
     add_card(slide, 4.65, 1.8, 4.05, 4.7, "基本面数据", [
         "内容：库存、开工率、现货价格、CPI、利率、美元指数、信用利差",
         "来源：卓创资讯、钢联、上海有色网",
         "用途：支持品种强弱排序、行业判断以及宏观环境识别",
         "更新频率：日/周/月/季/年都覆盖",
-    ], accent=TEAL, title_size=19, body_size=13)
+    ], accent=TEAL, title_size=19, body_size=13, line_space=8)
     add_card(slide, 8.7, 1.8, 4.05, 4.7, "另类数据", [
         "内容：卫星图像、分析师预测、各类第三方事件数据",
         "来源：第三方数据供应商",
-        "用途：补充传统数据难覆盖的数据，同时覆盖了各类事件扰动与市场预期变化",
+        "用途：补充传统数据难覆盖的数据，同时覆盖各类事件扰动与市场预期变化",
         "更新频率：日/周/月/季/年都覆盖",
-    ], accent=GOLD, title_size=19, body_size=13)
+    ], accent=GOLD, title_size=19, body_size=13, line_space=8)
     add_footer(slide, 3)
 
 
@@ -339,21 +398,21 @@ def slide_factors(prs: Presentation):
         "优点：更新频率高、响应速度快、可直接映射交易行为",
         "适配性：适合趋势主导、波动放大、情绪切换较快的阶段",
         "特点：对行情拐点敏感，但对噪声和交易成本也更敏感",
-    ], accent=BLUE, fill_color=LIGHT_BLUE)
+    ], accent=BLUE, fill_color=LIGHT_BLUE, line_space=8)
     add_card(slide, 4.7, 1.85, 3.95, 4.9, "基本面因子", [
         "分类：产业基本面因子、宏观因子",
         "示例：库存变化、基差结构、CPI、PPI、利率、美元指数",
         "优点：经济含义清晰、跨周期解释力强、稳定性较好",
         "适配性：适合中低频方向判断和跨品种横向配置",
         "特点：更新频率相对较低，通常需要与量价信号联合使用",
-    ], accent=TEAL, fill_color=LIGHT_TEAL)
+    ], accent=TEAL, fill_color=LIGHT_TEAL, line_space=8)
     add_card(slide, 8.75, 1.85, 3.95, 4.9, "另类因子", [
         "分类：事件驱动类、替代数据类、预期偏差类",
         "示例：天气扰动、卫星产能监测、产业链事件映射",
         "优点：信息增量高，能捕捉传统因子难覆盖的变化",
         "适配性：适合突发事件驱动或常规信号拥挤阶段",
         "特点：噪声较高，需先做清洗和验证，再进入生产流程",
-    ], accent=GOLD, fill_color=LIGHT_GOLD)
+    ], accent=GOLD, fill_color=LIGHT_GOLD, line_space=8)
     add_footer(slide, 4)
 
 
@@ -363,7 +422,7 @@ def slide_evaluation(prs: Presentation):
     add_section_tag(slide, "评估", RED)
     add_title(slide, "评估体系", "不仅评估单因子收益，还评估其对现有组合的边际增益")
 
-    add_card(slide, 0.65, 1.75, 3.1, 4.9, "基础指标", [
+    add_card(slide, 0.65, 1.75, 2.65, 4.9, "基础指标", [
         "夏普比率",
         "最大回撤深度",
         "最大回撤时间",
@@ -380,6 +439,8 @@ def slide_evaluation(prs: Presentation):
         "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12",
         "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06",
     ]
+    # 仅保留每3个月一个横轴标签，避免时间坐标过密。
+    dates_sparse = [d if i % 3 == 0 else "" for i, d in enumerate(dates_long)]
     gmv_vals = [2.8, 3.2, 2.5, 3.6, 2.3, 3.8, 3.1, 2.6, 3.4, 2.9, 3.7, 2.4,
                 3.3, 2.7, 3.9, 2.2, 3.5, 2.8, 3.2, 2.5, 3.7, 3.0, 2.4, 3.6,
                 2.9, 3.3, 2.6, 3.8, 2.3, 3.1]
@@ -389,10 +450,10 @@ def slide_evaluation(prs: Presentation):
 
     # --- 左上：GMV时间序列 ---
     d_gmv = CategoryChartData()
-    d_gmv.categories = dates_long
+    d_gmv.categories = dates_sparse
     d_gmv.add_series("GMV", gmv_vals)
     c_gmv = slide.shapes.add_chart(
-        XL_CHART_TYPE.LINE, Inches(3.95), Inches(1.8), Inches(4.55), Inches(2.2), d_gmv,
+        XL_CHART_TYPE.LINE, Inches(3.55), Inches(1.8), Inches(4.85), Inches(2.25), d_gmv,
     ).chart
     c_gmv.has_title = True
     c_gmv.chart_title.text_frame.text = "GMV"
@@ -406,10 +467,10 @@ def slide_evaluation(prs: Presentation):
 
     # --- 右上：Delta时间序列 ---
     d_delta = CategoryChartData()
-    d_delta.categories = dates_long
+    d_delta.categories = dates_sparse
     d_delta.add_series("Delta", delta_vals)
     c_delta = slide.shapes.add_chart(
-        XL_CHART_TYPE.LINE, Inches(8.65), Inches(1.8), Inches(4.55), Inches(2.2), d_delta,
+        XL_CHART_TYPE.LINE, Inches(8.45), Inches(1.8), Inches(4.35), Inches(2.25), d_delta,
     ).chart
     c_delta.has_title = True
     c_delta.chart_title.text_frame.text = "Delta"
@@ -427,7 +488,7 @@ def slide_evaluation(prs: Presentation):
     wd_vals = [0.12, 0.08, -0.03, 0.15, 0.09]
     d_wd.add_series("PnL", wd_vals)
     c_wd = slide.shapes.add_chart(
-        XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(3.95), Inches(4.15), Inches(4.55), Inches(2.2), d_wd,
+        XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(3.55), Inches(4.15), Inches(4.85), Inches(2.25), d_wd,
     ).chart
     c_wd.has_title = True
     c_wd.chart_title.text_frame.text = "PnL 工作日分布"
@@ -457,7 +518,7 @@ def slide_evaluation(prs: Presentation):
     mo_vals = [0.18, -0.05, 0.22, 0.07, -0.11, 0.14, 0.09, 0.03, 0.16, -0.08, 0.20, 0.11]
     d_mo.add_series("PnL", mo_vals)
     c_mo = slide.shapes.add_chart(
-        XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(8.65), Inches(4.15), Inches(4.55), Inches(2.2), d_mo,
+        XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(8.45), Inches(4.15), Inches(4.35), Inches(2.25), d_mo,
     ).chart
     c_mo.has_title = True
     c_mo.chart_title.text_frame.text = "PnL 月份分布"
@@ -560,7 +621,7 @@ def slide_incremental_evaluation(prs: Presentation):
 
     ax.set_xticks(xs)
     ax.set_xticklabels(times, fontsize=7, rotation=30, ha='right')
-    ax.set_ylabel("PnL", fontsize=8)
+    ax.set_ylabel("", fontsize=8)
     ax.set_title("Intraday Average PnL", fontsize=9, pad=4)
     ax.set_ylim(-0.05, 1.35)
     ax.spines['top'].set_visible(False)
@@ -615,21 +676,19 @@ def slide_risk(prs: Presentation):
     add_title(slide, "风控", "风控目标不是压制收益，而是确保组合在极端环境下仍可管理")
 
     add_card(slide, 0.7, 1.8, 3.9, 2.1, "硬约束", [
-        "VaR约束。",
-        "产品投资限制。",
-        "交易所投资限制。",
-        "单品种与单行业集中度限制。",
+        "VaR约束",
+        "投资限制",
+        "单品种与单板块集中度限制",
     ], accent=RED)
     add_card(slide, 0.7, 4.1, 3.9, 2.1, "异常情况处理", [
-        "盘中剧烈波动时，需考虑无法按常规方式平仓的场景。",
-        "预设降频、减仓、替代合约与人工接管机制。",
-        "异常行情结束后，执行复盘并更新熔断参数。",
+        "盘中剧烈波动时，需考虑无法按常规方式平仓的场景",
+        "预设降频、减仓、替代合约与人工接管机制",
+        "异常行情结束后，执行复盘并更新熔断参数",
     ], accent=GOLD)
-    add_card(slide, 4.9, 1.8, 7.4, 4.5, "双层仓位系数管理", [
-        "第一层：节假日前后，按流动性与跳空风险调整仓位。",
-        "第二层：触发预警线、止损线后，自动调整单策略仓位。",
-        "第三层：当某类策略持续回撤时，逐步下调该策略族权重。",
-        "第四层（可选）：组合波动超阈值时，启用临时风险预算压降。",
+    add_card(slide, 4.9, 1.8, 7.4, 4.5, "仓位系数管理", [
+        "第一层：节假日前后，按流动性与跳空风险调整仓位",
+        "第二层：触发预警线、止损线后，自动调整单策略仓位",
+        "第三层：当某类策略持续回撤时，逐步下调该策略族权重",
     ], accent=NAVY)
 
     add_footer(slide, 8)
@@ -641,21 +700,18 @@ def slide_execution(prs: Presentation):
     add_section_tag(slide, "执行", BLUE)
     add_title(slide, "交易执行", "执行不是末端细节，而是影响策略收益兑现的关键环节")
 
-    add_card(slide, 0.7, 1.9, 3.8, 4.8, "日度少量调仓", [
-        "执行方式：VWAP。",
-        "适用于日常小幅调仓，目标是降低冲击成本。",
-        "优先在流动性较高时段分批完成。",
-    ], accent=BLUE)
-    add_card(slide, 4.8, 1.9, 3.8, 4.8, "建仓、清仓、换月", [
-        "执行方式：TWAP。",
-        "适用于主力换月、新建仓位或集中退出。",
-        "按交易窗口拆分委托，降低一次性冲击。",
-    ], accent=TEAL)
-    add_card(slide, 8.9, 1.9, 3.8, 4.8, "混合执行", [
-        "TWAP与VWAP结合。",
-        "保证每分钟至少一手下单，兼顾成交效率与市场存在感。",
-        "实时监控成交偏差，动态调整执行节奏。",
-    ], accent=GOLD)
+    add_card(slide, 0.9, 1.9, 5.55, 4.8, "VWAP为主，TWAP为辅", [
+        "适用场景：日度小幅调仓",
+        "适用场景：常规权重调整",
+        "核心目标：降低冲击成本",
+        "核心目标：兼顾成交效率",
+    ], accent=BLUE, body_size=14)
+    add_card(slide, 6.85, 1.9, 5.55, 4.8, "TWAP为主，VWAP为辅", [
+        "适用场景：建仓、清仓、换月",
+        "适用场景：集中执行场景",
+        "核心目标：平滑市场冲击",
+        "核心目标：提高执行可控性",
+    ], accent=TEAL, body_size=14)
     add_footer(slide, 9)
 
 
@@ -666,12 +722,12 @@ def slide_summary(prs: Presentation):
     add_title(slide, "总结", "以统一框架打通数据、研究与交易")
 
     add_card(slide, 0.75, 1.85, 12.0, 4.9, "关键结论", [
-        "数据是基础，因子是表达，组合是放大器；风控与执行是收益兑现的最后两道关口。",
-        "后续扩展应优先考虑低相关增量，避免堆叠同质化信号。",
-        "策略研发需要持续回答三个问题：是否稳定、是否增益、是否可执行。",
-        "建议建立统一监控看板，贯通研究、交易、风控指标。",
-        "通过流程化、标准化、可回溯的研究体系，提升策略长期稳定性与可复制性。",
-    ], accent=NAVY)
+        "数据决定信号上限",
+        "因子决定收益来源",
+        "组合决定收益稳定性",
+        "风控与执行决定收益能否兑现",
+        "长期竞争力来自流程化、标准化与可复制性",
+    ], accent=NAVY, title_size=20, body_size=15)
     add_footer(slide, 10)
 
 
