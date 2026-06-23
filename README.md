@@ -113,46 +113,6 @@ Precious（贵金属）：
 4. 贵金属今年更像高波动震荡环境，趋势信号需要更严格的风控过滤。
 
 
-
-农产品  持续亏损
-
-能化，3月大赚 4月赚钱之后震荡
-
-贵金属  1月大赚  2月开始回撤之后波动
-
-黑色   1月赚  之后一直亏
-
-有色金属
-cu al  1月大赚  2—4小亏  5月开始赚钱
-other  1月大赚  之后一直亏损
-
-
-2026-01
-赚钱：Precious、NonFerrous、Energy
-亏钱：Agriculture、Ferrous
-
-2026-02
-赚钱：Agriculture、Ferrous
-亏钱：Energy、NonFerrous、Precious
-
-2026-03
-赚钱：Energy
-亏钱：Agriculture、Ferrous、NonFerrous、Precious
-
-2026-04
-赚钱：Energy、Precious
-亏钱：Agriculture、Ferrous、NonFerrous
-
-2026-05
-赚钱：NonFerrous
-亏钱：Agriculture、Energy、Ferrous、Precious
-
-2026-06（截至当前）
-赚钱：Agriculture、Energy
-亏钱：Ferrous、NonFerrous、Precious
-
-
-
 1. 市场的环境在不断改变，回测时间是不是应该最近5—8年更加合适？  例如之前黑色都是趋势，现在是震荡
 2. 传统的因子，例如双通道，均线，大部分不赚钱，但是偶尔也好赚钱（今年3月份能化），是否保留
 3. 倾向于用更复杂的因子，但是出现问题该怎么办
@@ -161,7 +121,6 @@ other  1月大赚  之后一直亏损
 6. 如何做机器学习？监督还是非监督？偏趋势还是反转，为什么？
 
 股指期货高频是什么相关因子
-
 
 待完成：
 1. 剔除较差的品种
