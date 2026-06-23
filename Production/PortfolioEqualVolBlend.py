@@ -74,6 +74,15 @@ def _merge_positions(position_map, weights):
     return out
 
 
+def _calc_norm_scale(pnl):
+    pnl_for_scale = pnl.copy()
+    pnl_for_scale = pnl_for_scale[(pnl_for_scale.index >= NORM_START_DATE) & (pnl_for_scale.index <= NORM_END_DATE)]
+    scale = pnl_for_scale.std()
+    if scale == 0 or pd.isna(scale):
+        return 1.0
+    return float(scale)
+
+
 def main():
     os.makedirs(RESULT_DIR, exist_ok=True)
 
@@ -84,6 +93,11 @@ def main():
     weights, pnl_df = _build_equal_vol_weights(pnl_map)
     blend_pnl = (pnl_df * weights).sum(axis=1)
     blend_pos = _merge_positions(pos_map, weights)
+
+    # Normalize final portfolio so daily PnL std is 1 in the configured window.
+    scale = _calc_norm_scale(blend_pnl)
+    blend_pnl = blend_pnl / scale
+    blend_pos = blend_pos / scale
     blend_gmv = blend_pos.abs().sum(axis=1)
 
     sharpe = _calc_sharpe(blend_pnl)
@@ -121,6 +135,8 @@ def main():
     print(f'  Trend weight: {weights["Trend"]:.4f}')
     print(f'  Reversion weight: {weights["Reversion"]:.4f}')
     print(f'  Alternative weight: {weights["Alternative"]:.4f}')
+    print(f'  Final normalization scale: {scale:.6f}')
+    print(f'  Final PnL std (norm window): {blend_pnl[(blend_pnl.index >= NORM_START_DATE) & (blend_pnl.index <= NORM_END_DATE)].std():.6f}')
     print(f'  Sharpe: {sharpe:.4f}')
     print(f'  CumPnL: {cum_pnl.iloc[-1]:.2f}')
     print(f'  MaxDD: {max_dd:.2f}')
