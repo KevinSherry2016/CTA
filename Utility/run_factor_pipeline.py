@@ -22,7 +22,7 @@ SIGNAL_PROCESS_SCRIPT = UTILITY_DIR / "signalProcess.py"
 FACTOR_EVAL_SCRIPT = UTILITY_DIR / "factorEvaluation.py"
 
 PIPELINE_CONFIG = {
-    "factors": [],
+    "factors": ['Carry_Momentum','Carry_Slope','Carry_TermStructure'],
     "n_list": [10,20,30,40,50,60,70,80],
     "backtest_start_date": 20180101,
     "custom_symbols": [],

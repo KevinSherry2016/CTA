@@ -7,13 +7,20 @@ import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULT_DIR = os.path.join(BASE_DIR, 'Result')
-OUTPUT_NAME = 'L2_EqualVol_Trend_Reversion_Alternative'
+OUTPUT_NAME = 'L2_EqualVol_Trend_Carry_Reversion_Alternative'
 NORM_START_DATE = '20200101'
 NORM_END_DATE = '20251231'
 
 
+def _strategy_output_name(strategy_name):
+    if strategy_name == 'Carry':
+        return 'L3_CarryMomentum_vs_CarryTermStructure_EqualVol'
+    return 'L2_Sector_Merge_All'
+
+
 def _read_norm_pnl(strategy_name):
-    path = os.path.join(BASE_DIR, strategy_name, 'Result', 'L2_Sector_Merge_All_norm_PnL.csv')
+    strategy_output = _strategy_output_name(strategy_name)
+    path = os.path.join(BASE_DIR, strategy_name, 'Result', f'{strategy_output}_norm_PnL.csv')
     if not os.path.exists(path):
         raise FileNotFoundError(f'PnL file not found: {path}')
     df = pd.read_csv(path, index_col=0)
@@ -23,7 +30,8 @@ def _read_norm_pnl(strategy_name):
 
 
 def _read_norm_position(strategy_name):
-    path = os.path.join(BASE_DIR, strategy_name, 'Result', 'L2_Sector_Merge_All_norm_Position.csv')
+    strategy_output = _strategy_output_name(strategy_name)
+    path = os.path.join(BASE_DIR, strategy_name, 'Result', f'{strategy_output}_norm_Position.csv')
     if not os.path.exists(path):
         raise FileNotFoundError(f'Position file not found: {path}')
     df = pd.read_csv(path, index_col=0)
@@ -86,7 +94,7 @@ def _calc_norm_scale(pnl):
 def main():
     os.makedirs(RESULT_DIR, exist_ok=True)
 
-    strategies = ['Trend', 'Reversion', 'Alternative']
+    strategies = ['Trend', 'Carry', 'Reversion', 'Alternative']
     pnl_map = {s: _read_norm_pnl(s) for s in strategies}
     pos_map = {s: _read_norm_position(s) for s in strategies}
 
@@ -132,9 +140,8 @@ def main():
     plt.close(fig)
 
     print('Equal-vol blend generated successfully:')
-    print(f'  Trend weight: {weights["Trend"]:.4f}')
-    print(f'  Reversion weight: {weights["Reversion"]:.4f}')
-    print(f'  Alternative weight: {weights["Alternative"]:.4f}')
+    for strategy in strategies:
+        print(f'  {strategy} weight: {weights[strategy]:.4f}')
     print(f'  Final normalization scale: {scale:.6f}')
     print(f'  Final PnL std (norm window): {blend_pnl[(blend_pnl.index >= NORM_START_DATE) & (blend_pnl.index <= NORM_END_DATE)].std():.6f}')
     print(f'  Sharpe: {sharpe:.4f}')
