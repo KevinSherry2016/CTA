@@ -72,6 +72,5 @@
 2025 年的季度节奏可以概括为：Q1 贵金属拉开主升，Q2 回撤中仍有韧性，Q3 贵金属再次放大收益，Q4 NonFerrous 与 Precious 继续强势。策略上，Reversion 在 2025 年前后两个强季度贡献最明显，Blend 仍然保持最稳的综合表现。
 
 #### 2.3 两年对比结论
-1. 2024 年更像“结构性分化的一年”，收益主要来自 NonFerrous 与 Precious。
-2. 2025 年更像“贵金属主导的一年”，Reversion 在 Q1 和 Q3 的弹性最强，全年收益明显领先。
-3. 两年合计看，盈利板块主要是 Precious 和 NonFerrous，拖累主要来自 Energy 和 Ferrous。
+1. 2024 年主要盈利板块是 Precious 与 NonFerrous；主要盈利品种集中在 AO.SHF、P.DCE、AU.SHF、FU.SHF。
+2. 2025 年主要盈利板块是 Precious（其次是 NonFerrous）；主要盈利品种集中在 AG.SHF、AU.SHF、CU.SHF、AP.ZCE、SN.SHF。
