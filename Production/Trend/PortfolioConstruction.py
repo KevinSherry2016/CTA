@@ -132,8 +132,8 @@ def main():
         {
             'output_name': 'L1_Sector_Energy',
             'file_weights': {
-                'TrendMomentum_DonchianChannel_Energy_N40_ZSCORE_norm_Position.csv': 1.0,
-                'TrendMomentum_DonchianChannel_Energy_N50_ZSCORE_norm_Position.csv': 1.0,
+                'TrendMomentum_DonchianChannel_Energy_N25_ZSCORE_norm_Position.csv': 1.0,
+                'TrendMomentum_DonchianChannel_Energy_N75_ZSCORE_norm_Position.csv': 1.0,
             },
         },
         {
@@ -146,8 +146,8 @@ def main():
         {
             'output_name': 'L1_Sector_NonFerrous',
             'file_weights': {
-                'TrendMomentum_LinearSlope_NonFerrous_N40_STATE_MACHINE_norm_Position.csv': 1.0,
-                'TrendMomentum_LinearSlope_NonFerrous_N50_STATE_MACHINE_norm_Position.csv': 1.0,
+                'TrendMomentum_LinearSlope_NonFerrous_N20_STATE_MACHINE_norm_Position.csv': 1.0,
+                'TrendMomentum_LinearSlope_NonFerrous_N70_STATE_MACHINE_norm_Position.csv': 1.0,
             },
         },
         {
